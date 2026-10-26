@@ -25,9 +25,14 @@ Live: https://kakashitako-blip.github.io/suye-lantern/
 
 ## Rendering
 
-ACES filmic tone mapping with a shadow-casting moon (2048 map on desktop, 1024 on touch
-devices), a hemisphere fill that brightens one step per station lit, and a gradient sky dome
-so the horizon never ends in a hard edge. Candle flames are emissive meshes plus additive
-sprites rather than lights; the only moving light is the one Suye carries, and each lit
-station adds one static warm point light. Device pixel ratio is capped at 2.5 on desktop
-and 2 on phones.
+Voxel world built from instanced cubes — ground, props, plants and emissive blocks are four
+`InstancedMesh` draw calls with per-block colour, so the whole village is a handful of
+batches. On top of that: ACES filmic tone mapping, a shadow-casting moon (2048 map on
+desktop, 1024 on touch), `UnrealBloomPass` for the lantern glow, a PMREM sky environment
+feeding the reflective water, a scrolling normal map for ripples, and falling blossom.
+
+The camera raycasts against tree trunks and buildings and pulls in when one would block the
+view of Suye.
+
+This is the art direction of a shader pack, not path tracing — a phone browser cannot do
+the latter.
