@@ -2,506 +2,1382 @@
 <html lang="my">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#2b0d22">
-<meta name="description" content="သီတင်းကျွတ်အတွက် Suye ရဲ့ မီးပုံးကံစမ်းမဲ">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#140718">
+<title>Suye ရဲ့ မီးပုံးခရီး</title>
+<meta name="description" content="သီတင်းကျွတ်ည — ရွာထဲက မီးတွေ ထွန်းပြီး လက်ဆောင်ရှာရမယ်။">
 <meta property="og:type" content="website">
-<meta property="og:title" content="Suye ရဲ့ မီးပုံးကံစမ်းမဲ 🏮">
-<meta property="og:description" content="မီးပုံးတစ်လုံး ထွန်းလိုက် — သီတင်းကျွတ် ပေါ့ကတ်မနီ ပေါက်မယ်။">
-<style>
-/* the small reset the page was authored against */
-:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
-body{margin:0;font:14px system-ui,-apple-system,sans-serif}
-img{max-width:100%}
-[hidden]{display:none!important}
-</style>
-<title>Suye ရဲ့ မီးပုံးကံစမ်းမဲ</title>
+<meta property="og:title" content="Suye ရဲ့ မီးပုံးခရီး 🏮">
+<meta property="og:description" content="သီတင်းကျွတ်ည။ ရွာတစ်ရွာလုံး မှောင်နေတယ်။ ဖယောင်းတိုင်တစ်တိုင်နဲ့ စလိုက်။">
+<meta property="og:image" content="https://kakashitako-blip.github.io/suye-lantern/preview.jpg">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+Myanmar:wght@400;600;700&family=Padauk:wght@400;700&display=swap">
 <style>
-/* Layout: one centred column on a plum night sky — a 3x3 lantern grid that dims to the single lantern she lights, with the prize card blooming underneath it. All copy in Burmese, so the type scale leaves headroom for stacked diacritics. */
+/* Layout: full-bleed 3D canvas with a thin HUD on top, thumb joystick bottom-left,
+   action button bottom-right, and story cards that slide up over the scene. */
 :root{
-  --night:#2b0d22;
+  --night:#140718;
+  --plum:#2b0d22;
   --rose:#ff86b4;
   --rose-deep:#bf3f76;
   --blush:#ffd9e9;
   --gold:#ffcf96;
+  --flame:#ffb347;
   --ink:#fff2f7;
-  --muted:#dfa4c1;
+  --muted:#d49cba;
   --line:rgba(255,160,198,.26);
-  --font-display:"Noto Serif Myanmar","Padauk","Myanmar Text",Georgia,serif;
-  --font-body:"Padauk","Noto Sans Myanmar","Myanmar Text","Helvetica Neue",Arial,sans-serif;
+  --f-display:"Noto Serif Myanmar","Padauk","Myanmar Text",Georgia,serif;
+  --f-body:"Padauk","Noto Sans Myanmar","Myanmar Text","Helvetica Neue",Arial,sans-serif;
   color-scheme:dark;
 }
-
-html,body{min-height:100%}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;margin:0;overflow:hidden;background:var(--night)}
 body{
-  margin:0;
-  background:
-    radial-gradient(90% 55% at 50% -8%, rgba(255,134,180,.30), transparent 62%),
-    radial-gradient(60% 40% at 12% 18%, rgba(255,207,150,.14), transparent 70%),
-    radial-gradient(70% 45% at 88% 72%, rgba(191,63,118,.26), transparent 72%),
-    var(--night);
-  color:var(--ink);
-  font-family:var(--font-body);
-  font-size:16px;
-  line-height:1.95;
+  font-family:var(--f-body);color:var(--ink);line-height:1.9;
   -webkit-font-smoothing:antialiased;
-  padding-left:max(16px,env(safe-area-inset-left,0px));
-  padding-right:max(16px,env(safe-area-inset-right,0px));
-  padding-block:clamp(26px,7vh,60px);
+  -webkit-user-select:none;user-select:none;
+  -webkit-tap-highlight-color:transparent;
+  touch-action:none;overscroll-behavior:none;
 }
+canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 
-#sky{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+/* ---------- shared panel look ---------- */
+.panel{
+  border:1px solid var(--line);border-radius:22px;
+  background:linear-gradient(170deg,rgba(255,217,233,.14),rgba(43,13,34,.86));
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  box-shadow:0 24px 70px -28px rgba(0,0,0,.9);
+}
+.btn{
+  -webkit-appearance:none;appearance:none;border:0;cursor:pointer;
+  font-family:var(--f-body);font-weight:700;font-size:1rem;line-height:1.9;
+  color:#4a0f2c;background:linear-gradient(170deg,var(--blush),var(--rose));
+  border-radius:999px;padding:12px 34px;
+  box-shadow:0 12px 30px -12px rgba(255,134,180,.9);
+  transition:transform .18s ease,filter .18s ease;
+}
+.btn:active{transform:scale(.96)}
+.btn.ghost{background:none;color:var(--blush);border:1px solid var(--line);box-shadow:none}
 
-main{position:relative;z-index:1;max-width:520px;margin-inline:auto;display:flex;flex-direction:column;gap:clamp(22px,5vh,38px)}
+/* ---------- HUD ---------- */
+#hud{
+  position:fixed;z-index:5;left:0;right:0;
+  top:env(safe-area-inset-top,0px);
+  padding:10px max(14px,env(safe-area-inset-left,0px)) 10px max(14px,env(safe-area-inset-right,0px));
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+  pointer-events:none;
+  background:linear-gradient(180deg,rgba(20,7,24,.78),transparent);
+}
+#pips{display:flex;gap:7px}
+.pip{
+  width:13px;height:17px;border-radius:50% 50% 42% 42%;
+  background:rgba(255,217,233,.14);border:1px solid rgba(255,217,233,.3);
+  transition:background .5s ease,box-shadow .5s ease,border-color .5s ease;
+}
+.pip.on{
+  background:radial-gradient(circle at 50% 62%,#fff3d4,var(--flame));
+  border-color:var(--gold);
+  box-shadow:0 0 14px 2px rgba(255,179,71,.75);
+}
+#place{
+  font-family:var(--f-display);font-weight:600;font-size:.95rem;
+  color:var(--gold);text-shadow:0 2px 10px rgba(0,0,0,.9);
+  opacity:0;transition:opacity .45s ease;max-width:58%;text-align:right;
+}
+#place.show{opacity:1}
 
-/* --- header --- */
-header{text-align:center;display:flex;flex-direction:column;gap:10px}
+/* ---------- joystick ---------- */
+#stick{
+  position:fixed;z-index:6;
+  left:max(16px,env(safe-area-inset-left,0px));
+  bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  width:132px;height:132px;border-radius:50%;
+  border:1px solid rgba(255,217,233,.2);
+  background:radial-gradient(circle,rgba(255,217,233,.09),rgba(255,217,233,.02));
+  opacity:0;transition:opacity .3s ease;pointer-events:none;
+}
+#stick.live{opacity:1}
+#knob{
+  position:absolute;left:50%;top:50%;width:54px;height:54px;margin:-27px 0 0 -27px;
+  border-radius:50%;
+  background:radial-gradient(circle at 40% 35%,var(--blush),var(--rose-deep));
+  box-shadow:0 0 22px -4px rgba(255,134,180,.9);
+}
+#hint{
+  position:fixed;z-index:6;left:0;right:0;
+  bottom:calc(26px + env(safe-area-inset-bottom,0px));
+  text-align:center;font-size:.9rem;color:var(--muted);
+  text-shadow:0 2px 10px rgba(0,0,0,.9);
+  opacity:0;transition:opacity .6s ease;pointer-events:none;
+  padding-inline:max(16px,env(safe-area-inset-left,0px));
+}
+#hint.show{opacity:.95}
+
+/* ---------- action button ---------- */
+#act{
+  position:fixed;z-index:6;
+  right:max(16px,env(safe-area-inset-right,0px));
+  bottom:calc(34px + env(safe-area-inset-bottom,0px));
+  width:108px;height:108px;border-radius:50%;
+  display:grid;place-items:center;gap:0;
+  font-family:var(--f-display);font-weight:700;font-size:1rem;line-height:1.25;
+  color:#4a0f2c;background:radial-gradient(circle at 42% 34%,#fff4de,var(--flame));
+  border:0;box-shadow:0 0 36px -4px rgba(255,179,71,.9);
+  transform:scale(0);transition:transform .34s cubic-bezier(.2,1.3,.35,1);
+  cursor:pointer;
+}
+#act.show{transform:scale(1);animation:pulse 2.1s ease-in-out infinite}
+#act:active{transform:scale(.92);animation:none}
+@keyframes pulse{0%,100%{box-shadow:0 0 36px -4px rgba(255,179,71,.9)}50%{box-shadow:0 0 54px 4px rgba(255,179,71,1)}}
+
+/* ---------- overlays (intro / story card / prize) ---------- */
+.veil{
+  position:fixed;inset:0;z-index:20;display:grid;place-items:center;
+  padding:max(18px,env(safe-area-inset-left,0px));
+  padding-top:calc(18px + env(safe-area-inset-top,0px));
+  padding-bottom:calc(18px + env(safe-area-inset-bottom,0px));
+  background:radial-gradient(70% 60% at 50% 30%,rgba(43,13,34,.8),rgba(20,7,24,.95));
+  opacity:1;transition:opacity .6s ease;
+  overflow-y:auto;
+}
+.veil[hidden]{display:none!important}
+.veil.fading{opacity:0;pointer-events:none}
+.sheet{
+  width:min(440px,100%);padding:clamp(22px,6vw,32px);
+  display:flex;flex-direction:column;gap:16px;text-align:center;
+  animation:rise .55s cubic-bezier(.2,.9,.25,1) both;
+}
+@keyframes rise{from{opacity:0;transform:translateY(22px) scale(.96)}to{opacity:1;transform:none}}
 .eyebrow{
-  margin:0;font-family:var(--font-body);font-size:.95rem;line-height:1.7;
-  color:var(--gold);opacity:.95;
+  margin:0;font-size:.82rem;letter-spacing:.14em;color:var(--gold);opacity:.95;line-height:1.7;
 }
-.eyebrow .sub{display:block;margin-top:2px;font-size:.8rem;letter-spacing:.06em;color:var(--muted)}
-h1{
-  margin:0;font-family:var(--font-display);font-weight:600;
-  font-size:clamp(1.95rem,8.4vw,2.8rem);line-height:1.5;letter-spacing:0;
-  text-wrap:balance;
-  background:linear-gradient(176deg,var(--ink) 18%,var(--blush) 58%,var(--rose) 100%);
+.sheet h1,.sheet h2{
+  margin:0;font-family:var(--f-display);font-weight:600;
+  line-height:1.5;text-wrap:balance;
+  background:linear-gradient(176deg,var(--ink) 16%,var(--blush) 58%,var(--rose) 100%);
   -webkit-background-clip:text;background-clip:text;color:transparent;
   padding-block:.08em;
 }
-.lede{margin:0 auto;max-width:30ch;color:var(--muted);font-size:1rem;line-height:2.05}
-.lede b{color:var(--blush);font-weight:700}
-.nm{font-family:var(--font-body);font-weight:700;letter-spacing:.015em}
+.sheet h1{font-size:clamp(1.8rem,8vw,2.5rem)}
+.sheet h2{font-size:clamp(1.4rem,6.4vw,1.95rem)}
+.sheet p{margin:0;color:var(--blush);font-size:1rem;line-height:2.05}
+.sheet p.sub{color:var(--muted);font-size:.95rem}
+.nm{font-family:var(--f-body);font-weight:700;letter-spacing:.015em}
+.sheet .btn{align-self:center;margin-top:4px}
+.sheet .found{
+  font-family:var(--f-display);font-weight:700;color:var(--gold);
+  font-size:1.15rem;line-height:1.8;margin:0;
+}
 
-/* --- lantern grid --- */
-.grid{
-  display:grid;grid-template-columns:repeat(3,1fr);
-  gap:clamp(4px,1.6vw,14px);max-width:440px;width:100%;margin-inline:auto;
-}
-.lantern{
-  -webkit-appearance:none;appearance:none;border:0;background:none;padding:0;margin:0;
-  width:100%;aspect-ratio:3/4;min-width:0;display:grid;place-items:center;
-  cursor:pointer;color:inherit;position:relative;
-  transition:transform .45s cubic-bezier(.2,.9,.25,1),opacity .6s ease,filter .6s ease;
-  animation:bob 5.2s ease-in-out infinite;
-}
-.lantern:nth-child(2){animation-duration:6.1s;animation-delay:-.7s}
-.lantern:nth-child(3){animation-duration:4.8s;animation-delay:-1.6s}
-.lantern:nth-child(4){animation-duration:5.9s;animation-delay:-2.3s}
-.lantern:nth-child(5){animation-duration:4.4s;animation-delay:-.4s}
-.lantern:nth-child(6){animation-duration:6.4s;animation-delay:-3.1s}
-.lantern:nth-child(7){animation-duration:5.1s;animation-delay:-1.1s}
-.lantern:nth-child(8){animation-duration:6.8s;animation-delay:-2.7s}
-.lantern:nth-child(9){animation-duration:4.9s;animation-delay:-3.6s}
-@keyframes bob{0%,100%{transform:translateY(-4px)}50%{transform:translateY(5px)}}
-
-.lantern .halo{
-  position:absolute;inset:6% 2%;border-radius:50%;
-  background:radial-gradient(circle at 50% 56%,rgba(255,170,205,.42),rgba(255,134,180,.12) 48%,transparent 72%);
-  filter:blur(5px);transition:opacity .5s ease;
-}
-.lantern .body{
-  position:relative;width:70%;aspect-ratio:1/1.18;
-  border-radius:48% 48% 42% 42% / 36% 36% 54% 54%;
-  background:
-    radial-gradient(52% 44% at 50% 64%,rgba(255,236,206,.95),rgba(255,207,150,.45) 52%,transparent 76%),
-    repeating-linear-gradient(90deg,rgba(255,255,255,.11) 0 1px,transparent 1px 22%),
-    linear-gradient(168deg,var(--rose) 4%,var(--rose-deep) 96%);
-  box-shadow:
-    0 0 26px -6px rgba(255,134,180,.6),
-    inset 0 -14px 20px -12px rgba(43,13,34,.75),
-    inset 0 8px 14px -10px rgba(255,255,255,.5);
-  display:grid;place-items:center;
-  transition:box-shadow .5s ease,transform .5s ease;
-}
-/* top cap */
-.lantern .body::before{
-  content:"";position:absolute;top:-9%;left:50%;transform:translateX(-50%);
-  width:34%;height:12%;border-radius:3px 3px 1px 1px;
-  background:linear-gradient(180deg,var(--gold),#b87b4e);
-  box-shadow:0 -7px 0 -5px var(--gold);
-}
-/* tassel */
-.lantern .body::after{
-  content:"";position:absolute;bottom:-17%;left:50%;transform:translateX(-50%);
-  width:30%;height:18%;
-  background:
-    linear-gradient(var(--gold),transparent) 10% 0/2px 100% no-repeat,
-    linear-gradient(var(--gold),transparent) 35% 0/2px 100% no-repeat,
-    linear-gradient(var(--gold),transparent) 62% 0/2px 100% no-repeat,
-    linear-gradient(var(--gold),transparent) 88% 0/2px 100% no-repeat;
-  opacity:.75;
-}
-.lantern .no{
-  position:relative;font-family:var(--font-display);font-size:1.1rem;line-height:1;
-  color:#5e1536;opacity:.5;text-shadow:0 1px 0 rgba(255,236,206,.5);
-}
-.lantern:hover .body,.lantern:focus-visible .body{transform:scale(1.07)}
-.lantern:hover .halo,.lantern:focus-visible .halo{opacity:1}
-.lantern:focus-visible{outline:2px solid var(--blush);outline-offset:4px;border-radius:14px}
-.lantern:active .body{transform:scale(.96)}
-
-.grid.decided .lantern{pointer-events:none;animation-play-state:paused}
-.grid.decided .lantern:not(.chosen){opacity:.2;filter:saturate(.25) blur(1px);transform:scale(.88)}
-.lantern.chosen{animation:none;transform:translateY(-6px) scale(1.12);z-index:2}
-.lantern.chosen .body{
-  box-shadow:
-    0 0 60px -2px rgba(255,180,212,.85),
-    0 0 120px 10px rgba(255,134,180,.35),
-    inset 0 -14px 20px -12px rgba(43,13,34,.6),
-    inset 0 8px 14px -10px rgba(255,255,255,.7);
-}
-.lantern.chosen .halo{opacity:1;filter:blur(10px)}
-.lantern.chosen .no{opacity:0}
-
-/* --- result card --- */
-.card{
-  border:1px solid var(--line);border-radius:22px;
-  background:linear-gradient(170deg,rgba(255,217,233,.13),rgba(191,63,118,.1));
-  backdrop-filter:blur(6px);
-  padding:clamp(20px,5vw,30px);
-  text-align:center;display:flex;flex-direction:column;gap:12px;
-  box-shadow:0 20px 60px -30px rgba(0,0,0,.7);
-  animation:bloom .7s cubic-bezier(.2,.9,.25,1) both;
-}
-@keyframes bloom{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}
-.card .label{
-  margin:0;font-size:.9rem;line-height:1.8;letter-spacing:.04em;color:var(--muted);
-}
-.amount{
-  margin:0;font-family:var(--font-display);font-weight:700;
-  font-size:clamp(2.2rem,12.5vw,3.8rem);line-height:1.25;letter-spacing:0;
-  color:var(--blush);text-shadow:0 0 40px rgba(255,134,180,.55);
+/* ---------- prize reveal ---------- */
+.sheet .amount{
+  margin:0;font-family:var(--f-display);font-weight:700;
+  font-size:clamp(2.2rem,13vw,3.6rem);line-height:1.3;
+  color:var(--blush);text-shadow:0 0 44px rgba(255,134,180,.6);
   display:flex;align-items:baseline;justify-content:center;gap:.28em;flex-wrap:wrap;
 }
-.amount #num{display:inline-block;min-width:6.4ch;max-width:100%;text-align:center}
-.amount .unit{font-family:var(--font-body);font-weight:700;font-size:.3em;line-height:1.6;color:var(--rose)}
-.words{margin:0;font-family:var(--font-display);font-weight:600;font-size:1.3rem;line-height:1.7;color:var(--gold)}
-.note{margin:0 auto;max-width:27ch;color:var(--blush);font-size:1rem;line-height:2}
-.copy{
-  -webkit-appearance:none;appearance:none;align-self:center;
-  font-family:var(--font-body);font-weight:700;font-size:.95rem;line-height:1.9;letter-spacing:.03em;
-  color:#4a0f2c;background:linear-gradient(170deg,var(--blush),var(--rose));
-  border:0;border-radius:999px;padding:12px 30px;cursor:pointer;
-  box-shadow:0 10px 26px -12px rgba(255,134,180,.9);
-  transition:transform .2s ease,filter .2s ease;
-}
-.copy:hover{transform:translateY(-2px);filter:brightness(1.06)}
-.copy:active{transform:translateY(0)}
-.copy:focus-visible{outline:2px solid var(--blush);outline-offset:3px}
-.locked{margin:0;font-size:.85rem;line-height:1.85;color:var(--muted);opacity:.85}
+.sheet .amount #num{display:inline-block;min-width:6.4ch;max-width:100%;text-align:center}
+.sheet .amount .unit{font-family:var(--f-body);font-weight:700;font-size:.3em;line-height:1.6;color:var(--rose)}
+.sheet .words{margin:0;font-family:var(--f-display);font-weight:600;font-size:1.3rem;line-height:1.7;color:var(--gold)}
+.sheet .locked{margin:0;font-size:.85rem;line-height:1.85;color:var(--muted);opacity:.85}
 
-footer{text-align:center;font-size:.9rem;line-height:1.8;color:var(--muted);opacity:.7;margin:0}
+/* ---------- loading / no-webgl ---------- */
+#boot{position:fixed;inset:0;z-index:30;display:grid;place-items:center;background:var(--night)}
+#boot .dot{
+  width:16px;height:21px;border-radius:50% 50% 42% 42%;
+  background:radial-gradient(circle at 50% 62%,#fff3d4,var(--flame));
+  animation:flicker 1.5s ease-in-out infinite;
+}
+@keyframes flicker{0%,100%{opacity:.35;transform:scale(.9)}50%{opacity:1;transform:scale(1.08)}}
+a{color:var(--blush)}
 
 @media (prefers-reduced-motion:reduce){
-  .lantern,.card{animation:none}
-  .lantern,.lantern .body,.lantern .halo{transition:none}
+  .sheet,#act.show,#boot .dot{animation:none}
 }
 </style>
-
 </head>
 <body>
-<canvas id="sky" aria-hidden="true"></canvas>
 
-<main>
-  <header>
-    <p class="eyebrow">သီတင်းကျွတ်ပွဲတော် ၂၀၂၆<span class="sub">မီးပုံးကံစမ်းမဲ</span></p>
-    <h1><span class="nm">Suye</span> ရေ၊ မီးပုံးတစ်လုံး ထွန်းလိုက်</h1>
-    <p class="lede">မီးပုံး ၉ လုံး လေပေါ်မှာ ပျံနေတယ်။ အထဲက တစ်လုံးမှာ <span class="nm">Gintoki</span> ဆီက နင့်အတွက် သီတင်းကျွတ် ပေါ့ကတ်မနီ ပါနေတယ် — <b>တစ်သိန်း</b> ကနေ <b>တစ်သန်း</b> အထိ ဖြစ်နိုင်တယ်။ တစ်လုံးပဲ ရွေးလို့ရတယ်၊ ပြန်ရွေးလို့ မရဘူးနော်။ အလှဆုံးတစ်လုံးကို ရွေးလိုက်။</p>
-  </header>
+<div id="boot"><div class="dot"></div></div>
 
-  <div class="grid" id="grid" role="group" aria-label="ရွေးရန် မီးပုံး ၉ လုံး"></div>
+<div id="hud" hidden>
+  <div id="pips"></div>
+  <div id="place"></div>
+</div>
 
-  <section class="card" id="result" hidden aria-live="polite">
-    <p class="label" id="resultLabel"><span class="nm">Suye</span> ရဲ့ မီးပုံး</p>
+<div id="stick"><div id="knob"></div></div>
+<div id="hint"></div>
+<button id="act" type="button" hidden></button>
+
+<!-- intro -->
+<div class="veil" id="intro" hidden>
+  <div class="sheet panel">
+    <p class="eyebrow">သီတင်းကျွတ်ပွဲတော် ၂၀၂၆</p>
+    <h1><span class="nm">Suye</span> ရဲ့ မီးပုံးခရီး</h1>
+    <p>လပြည့်ညပေမယ့် ရွာတစ်ရွာလုံး မှောင်နေတယ်။ ဘယ်သူမှ မီးမထွန်းရသေးဘူး။</p>
+    <p class="sub">နင့်လက်ထဲမှာ ဖယောင်းတိုင်တစ်တိုင်ပဲ ရှိတယ်။ ရွာထဲက နေရာ ၅ ခုမှာ မီးထွန်းပေးပါ — တစ်နေရာစီမှာ <span class="nm">Gintoki</span> ဝှက်ထားတဲ့ တစ်ခုခု တွေ့လိမ့်မယ်။</p>
+    <p class="sub">ဘယ်ဘက်ကို လက်မနဲ့ ဆွဲပြီး လမ်းလျှောက်။ နေရာတစ်ခုနားရောက်ရင် ညာဘက်က မီးခလုတ်ကို နှိပ်။</p>
+    <button class="btn" id="go" type="button">ခရီးစတင်မယ်</button>
+  </div>
+</div>
+
+<!-- story card -->
+<div class="veil" id="card" hidden>
+  <div class="sheet panel">
+    <p class="eyebrow" id="cardStop"></p>
+    <h2 id="cardTitle"></h2>
+    <p id="cardText"></p>
+    <p class="found" id="cardFound"></p>
+    <button class="btn" id="cardNext" type="button">ဆက်သွားမယ်</button>
+  </div>
+</div>
+
+<!-- prize -->
+<div class="veil" id="prize" hidden>
+  <div class="sheet panel">
+    <p class="eyebrow">ရွာတစ်ရွာလုံး လင်းသွားပြီ</p>
+    <h2 id="prizeTitle">နောက်ဆုံး မီးပုံး</h2>
+    <p id="prizeText"></p>
     <p class="amount"><span id="num">၀</span><span class="unit">ကျပ်</span></p>
     <p class="words" id="words"></p>
-    <p class="note">ဒါ နင့်အတွက်ပဲ။ စခရင်ရှော့ရိုက်ပြီး <span class="nm">Gintoki</span> ဆီ ပို့လိုက်၊ ပိုက်ဆံ လွှဲပေးမယ်နော် 💗</p>
-    <button class="copy" id="copy" type="button">ကော်ပီကူးယူ</button>
+    <p class="sub" id="prizeNote"></p>
+    <button class="btn" id="copyBtn" type="button">ကော်ပီကူးယူ</button>
     <p class="locked" id="locked"></p>
-  </section>
+  </div>
+</div>
 
-  <footer>သီတင်းကျွတ်ပွဲတော် မင်္ဂလာပါ <span class="nm">Suye</span> ရေ 🌸<br>— <span class="nm">Gintoki</span></footer>
-</main>
+<!-- webgl fallback -->
+<div class="veil" id="nogl" hidden>
+  <div class="sheet panel">
+    <p class="eyebrow">သီတင်းကျွတ်ပွဲတော် ၂၀၂၆</p>
+    <h2>ဒီဖုန်းမှာ 3D မရဘူး</h2>
+    <p>ကိစ္စမရှိပါဘူး — ရိုးရိုးမီးပုံးကံစမ်းမဲနဲ့ ကစားလို့ရတယ်။</p>
+    <a class="btn" href="lantern.html">မီးပုံးကံစမ်းမဲ သွားမယ်</a>
+  </div>
+</div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script>
 (function(){
-  "use strict";
+"use strict";
 
-  var MIN = 100000, MAX = 1000000, STEP = 10000;
-  var KEY = "thadingyut-draw-2026";
-  var MM_DIGITS = "၀၁၂၃၄၅၆၇၈၉";
-  var MM_WORDS = ["", "တစ်", "နှစ်", "သုံး",
-                  "လေး", "ငါး", "ခြောက်",
-                  "ခုနစ်", "ရှစ်", "ကိုး"];
-  var LAKH = "သိန်း";      /* သိန်း  = 100,000 */
-  var TENK = "သောင်း"; /* သောင်း = 10,000  */
-  var MILL = "တစ်သန်း"; /* တစ်သန်း = 1,000,000 */
-  var reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+/* ============================ boot guards ============================ */
+function hasWebGL(){
+  try{
+    var c = document.createElement("canvas");
+    return !!(window.WebGLRenderingContext && (c.getContext("webgl") || c.getContext("experimental-webgl")));
+  }catch(e){ return false; }
+}
+var $ = function(id){ return document.getElementById(id); };
+if(!window.THREE || !hasWebGL()){
+  $("boot").hidden = true; $("nogl").hidden = false;
+  return;
+}
 
-  /* --- prize table: mostly 2–4 lakh, a thin tail, a rare 1,000,000 --- */
-  var BANDS = [
-    { w:  8, min:  100000, max:  190000 },
-    { w: 72, min:  200000, max:  400000 },
-    { w: 14, min:  410000, max:  700000 },
-    { w:  3, min:  710000, max:  990000 },
-    { w:  3, min: 1000000, max: 1000000 }
-  ];
+var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
+var SAVE_KEY = "suye-lantern-journey-v1";
 
-  function drawAmount(){
-    var total = 0, i;
-    for(i = 0; i < BANDS.length; i++) total += BANDS[i].w;
-    var r = Math.random() * total, band = BANDS[BANDS.length - 1];
-    for(i = 0; i < BANDS.length; i++){
-      r -= BANDS[i].w;
-      if(r < 0){ band = BANDS[i]; break; }
+/* ============================ burmese helpers ============================ */
+var MM_D = "၀၁၂၃၄၅၆၇၈၉";
+var MM_W = ["","တစ်","နှစ်","သုံး","လေး",
+            "ငါး","ခြောက်","ခုနစ်",
+            "ရှစ်","ကိုး"];
+var LAKH = "သိန်း", TENK = "သောင်း",
+    MILL = "တစ်သန်း";
+function mmD(s){ return String(s).replace(/[0-9]/g, function(d){ return MM_D.charAt(+d); }); }
+function mmN(n){ return mmD(n.toLocaleString("en-US")); }
+function mmWords(n){
+  if(n >= 1000000) return MILL;
+  var l = Math.floor(n/100000), t = Math.floor((n%100000)/10000);
+  return MM_W[l] + LAKH + (t ? MM_W[t] + TENK : "");
+}
+
+/* ============================ prize draw ============================ */
+var MINP = 100000, MAXP = 1000000, STEP = 10000;
+var BANDS = [
+  { w:  8, min:  100000, max:  190000 },
+  { w: 72, min:  200000, max:  400000 },
+  { w: 14, min:  410000, max:  700000 },
+  { w:  3, min:  710000, max:  990000 },
+  { w:  3, min: 1000000, max: 1000000 }
+];
+function drawPrize(){
+  var total = 0, i;
+  for(i=0;i<BANDS.length;i++) total += BANDS[i].w;
+  var r = Math.random()*total, band = BANDS[BANDS.length-1];
+  for(i=0;i<BANDS.length;i++){ r -= BANDS[i].w; if(r < 0){ band = BANDS[i]; break; } }
+  var steps = Math.floor((band.max - band.min)/STEP) + 1;
+  return band.min + Math.floor(Math.random()*steps)*STEP;
+}
+
+/* ============================ three.js core ============================ */
+var scene = new THREE.Scene();
+scene.background = new THREE.Color(0x140718);
+scene.fog = new THREE.FogExp2(0x16081b, 0.0125);
+
+var camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 400);
+var renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:"high-performance" });
+renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.setSize(innerWidth, innerHeight);
+renderer.outputEncoding = THREE.sRGBEncoding;
+document.body.appendChild(renderer.domElement);
+
+var hemi = new THREE.HemisphereLight(0x4a2a63, 0x140a16, 0.55);
+scene.add(hemi);
+var moonLight = new THREE.DirectionalLight(0x9fb0ff, 0.40);
+moonLight.position.set(-50, 70, -60);
+scene.add(moonLight);
+
+/* ============================ small factories ============================ */
+var _texCache = {};
+function glowTex(key, inner, mid){
+  if(_texCache[key]) return _texCache[key];
+  var c = document.createElement("canvas"); c.width = c.height = 128;
+  var g = c.getContext("2d");
+  var rg = g.createRadialGradient(64,64,0,64,64,64);
+  rg.addColorStop(0, inner);
+  rg.addColorStop(0.35, mid);
+  rg.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = rg; g.fillRect(0,0,128,128);
+  var t = new THREE.CanvasTexture(c);
+  _texCache[key] = t;
+  return t;
+}
+var WARM = function(){ return glowTex("warm","rgba(255,236,196,1)","rgba(255,160,70,.55)"); };
+var PINK = function(){ return glowTex("pink","rgba(255,226,240,1)","rgba(255,110,170,.5)"); };
+
+function makeGlow(texFn, size, opacity){
+  var s = new THREE.Sprite(new THREE.SpriteMaterial({
+    map: texFn(), blending: THREE.AdditiveBlending,
+    depthWrite: false, transparent: true, opacity: opacity == null ? 1 : opacity,
+    fog: false
+  }));
+  s.scale.set(size, size, 1);
+  return s;
+}
+
+/* a candle flame: tiny emissive teardrop + additive halo */
+function makeFlame(size){
+  var g = new THREE.Group();
+  var core = new THREE.Mesh(
+    new THREE.SphereGeometry(0.055*size, 7, 7),
+    new THREE.MeshBasicMaterial({ color: 0xfff0cf, fog:false })
+  );
+  core.scale.y = 1.8;
+  g.add(core);
+  var halo = makeGlow(WARM, 1.5*size, 0.95);
+  g.add(halo);
+  g.userData.halo = halo;
+  g.userData.core = core;
+  g.userData.seed = Math.random()*9;
+  FLAMES.push(g);
+  return g;
+}
+var FLAMES = [];
+
+/* a paper lantern hanging from a point */
+function makeLantern(color, size, lit){
+  var g = new THREE.Group();
+  var body = new THREE.Mesh(
+    new THREE.SphereGeometry(0.3*size, 10, 8),
+    new THREE.MeshStandardMaterial({
+      color: color, roughness: .85, metalness: 0,
+      emissive: color, emissiveIntensity: lit ? 0.9 : 0.05
+    })
+  );
+  body.scale.y = 1.2;
+  g.add(body);
+  var cap = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.1*size, 0.1*size, 0.07*size, 7),
+    new THREE.MeshStandardMaterial({ color: 0x8a5a33, roughness:.9 })
+  );
+  cap.position.y = 0.37*size; g.add(cap);
+  var halo = makeGlow(PINK, 2.1*size, lit ? 0.75 : 0);
+  g.add(halo);
+  g.userData.body = body;
+  g.userData.halo = halo;
+  g.userData.lit = !!lit;
+  g.userData.color = color;
+  return g;
+}
+function lightLantern(l){
+  l.userData.lit = true;
+  l.userData.body.material.emissiveIntensity = 0.9;
+  l.userData.halo.material.opacity = 0.75;
+}
+
+/* ============================ ground ============================ */
+var GS = 190, GCX = 0, GCZ = -30;                 /* ground size + centre */
+function toTex(x, z, W, H){
+  return [ ((x - GCX)/GS + 0.5)*W, (0.5 + (z - GCZ)/GS)*H ];
+}
+
+var STATION_POS = [
+  { x:   2, z:  -7 },   /* 1 house        */
+  { x: -25, z: -23 },   /* 2 banyan tree  */
+  { x:  23, z: -31 },   /* 3 rock + creek */
+  { x:  -5, z: -53 },   /* 4 pagoda       */
+  { x:   7, z: -71 }    /* 5 Gintoki      */
+];
+
+function groundTexture(){
+  var S = 1024;
+  var c = document.createElement("canvas"); c.width = c.height = S;
+  var g = c.getContext("2d");
+
+  g.fillStyle = "#241327"; g.fillRect(0,0,S,S);
+  /* mottled earth */
+  for(var i=0;i<2600;i++){
+    var x = Math.random()*S, y = Math.random()*S, r = 4 + Math.random()*34;
+    g.fillStyle = "rgba(" + (38+Math.random()*26|0) + "," + (22+Math.random()*22|0) + "," + (44+Math.random()*26|0) + ",.5)";
+    g.beginPath(); g.arc(x,y,r,0,6.2832); g.fill();
+  }
+  /* the walked path, start -> each station in order */
+  var pts = [[0,4]].concat(STATION_POS.map(function(s){ return [s.x, s.z]; }))
+                   .map(function(p){ return toTex(p[0], p[1], S, S); });
+  g.lineCap = "round"; g.lineJoin = "round";
+  [[26,"rgba(92,64,84,.5)"],[16,"rgba(126,92,112,.55)"]].forEach(function(pass){
+    g.lineWidth = pass[0]; g.strokeStyle = pass[1];
+    g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+    for(var i=1;i<pts.length;i++){
+      var p = pts[i-1], q = pts[i];
+      g.quadraticCurveTo((p[0]+q[0])/2 + (i%2?34:-34), (p[1]+q[1])/2, q[0], q[1]);
     }
-    var steps = Math.floor((band.max - band.min) / STEP) + 1;
-    return band.min + Math.floor(Math.random() * steps) * STEP;
+    g.stroke();
+  });
+  /* scuffed pebbles on the path */
+  for(var j=0;j<900;j++){
+    var a = Math.random()*S, b = Math.random()*S;
+    g.fillStyle = "rgba(170,140,160,.09)";
+    g.fillRect(a, b, 2, 2);
   }
+  var t = new THREE.CanvasTexture(c);
+  t.anisotropy = 4;
+  return t;
+}
 
-  function mmDigits(s){
-    return String(s).replace(/[0-9]/g, function(d){ return MM_DIGITS.charAt(+d); });
-  }
-  function mmNumber(n){ return mmDigits(n.toLocaleString("en-US")); }
-  function mmWords(n){
-    if(n >= 1000000) return MILL;
-    var lakh = Math.floor(n / 100000);
-    var tenk = Math.floor((n % 100000) / 10000);
-    return MM_WORDS[lakh] + LAKH + (tenk ? MM_WORDS[tenk] + TENK : "");
-  }
+var ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(GS, GS, 1, 1),
+  new THREE.MeshLambertMaterial({ map: groundTexture() })
+);
+ground.rotation.x = -Math.PI/2;
+ground.position.set(GCX, 0, GCZ);
+scene.add(ground);
 
-  /* ---------- saved result (so refreshing can't re-roll) ---------- */
-  function load(){
-    try{
-      var raw = localStorage.getItem(KEY);
-      if(!raw) return null;
-      var v = JSON.parse(raw);
-      if(typeof v.amount === "number" && v.amount >= MIN && v.amount <= MAX) return v;
-    }catch(e){}
-    return null;
+/* ============================ sky ============================ */
+(function sky(){
+  var n = 420, pos = new Float32Array(n*3);
+  for(var i=0;i<n;i++){
+    var th = Math.random()*Math.PI*2, ph = Math.random()*0.42*Math.PI, R = 230;
+    pos[i*3]   = Math.cos(th)*Math.sin(ph + 0.08)*R;
+    pos[i*3+1] = Math.cos(ph)*R*0.75 + 30;
+    pos[i*3+2] = Math.sin(th)*Math.sin(ph + 0.08)*R - 40;
   }
-  function save(v){
-    try{ localStorage.setItem(KEY, JSON.stringify(v)); }catch(e){}
-  }
-  if(location.hash === "#reset"){
-    try{ localStorage.removeItem(KEY); }catch(e){}
-  }
+  var geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  scene.add(new THREE.Points(geo, new THREE.PointsMaterial({
+    color: 0xffe9f4, size: 1.25, sizeAttenuation: true, transparent: true, opacity: .8, fog: false
+  })));
 
-  /* ---------- night sky canvas: drifting motes + a petal burst ---------- */
-  var cvs = document.getElementById("sky"), ctx = cvs.getContext("2d");
-  var W = 0, H = 0, dpr = 1, motes = [], petals = [], running = false;
+  var moon = new THREE.Mesh(
+    new THREE.CircleGeometry(13, 36),
+    new THREE.MeshBasicMaterial({ color: 0xfff6e2, fog: false })
+  );
+  moon.position.set(-62, 78, -165);
+  moon.lookAt(0, 10, 0);
+  scene.add(moon);
+  var mg = makeGlow(WARM, 95, 0.4);
+  mg.position.copy(moon.position);
+  scene.add(mg);
+})();
 
-  function resize(){
-    dpr = Math.min(2, window.devicePixelRatio || 1);
-    W = cvs.width = Math.floor(innerWidth * dpr);
-    H = cvs.height = Math.floor(innerHeight * dpr);
+/* ============================ materials ============================ */
+function mat(color, opts){
+  var o = opts || {};
+  return new THREE.MeshLambertMaterial({
+    color: color,
+    emissive: o.emissive == null ? 0x000000 : o.emissive,
+    emissiveIntensity: o.ei == null ? 1 : o.ei,
+    transparent: !!o.transparent,
+    opacity: o.opacity == null ? 1 : o.opacity,
+    side: o.side || THREE.FrontSide
+  });
+}
+var M = {
+  wood:    function(){ return mat(0x5d3b2a); },
+  bamboo:  function(){ return mat(0x8a6a44); },
+  thatch:  function(){ return mat(0x4a3526); },
+  wall:    function(){ return mat(0x6b523a); },
+  stone:   function(){ return mat(0x4a3d50); },
+  leaf:    function(){ return mat(0x1f3826); },
+  leafHi:  function(){ return mat(0x2a4a30); },
+  gold:    function(){ return mat(0xd4ad55, { emissive: 0x4e3813 }); },
+  water:   function(){ return mat(0x1b2a4a, { transparent:true, opacity:.8, emissive:0x101c35 }); },
+  skin:    function(){ return mat(0xc98f63); },
+  hair:    function(){ return mat(0x140d12); },
+  htamein: function(){ return mat(0xc14a7d); },
+  blouse:  function(){ return mat(0xf3e2d0); },
+  longyi:  function(){ return mat(0x30484a); },
+  shirt:   function(){ return mat(0xe8dcc8); }
+};
+
+/* soft blob shadow */
+var _shadowTex = null;
+function blobShadow(size){
+  if(!_shadowTex){
+    var c = document.createElement("canvas"); c.width = c.height = 64;
+    var g = c.getContext("2d");
+    var rg = g.createRadialGradient(32,32,0,32,32,32);
+    rg.addColorStop(0,"rgba(0,0,0,.5)"); rg.addColorStop(1,"rgba(0,0,0,0)");
+    g.fillStyle = rg; g.fillRect(0,0,64,64);
+    _shadowTex = new THREE.CanvasTexture(c);
   }
-  function seedMotes(){
-    motes = [];
-    var n = Math.round(Math.min(54, Math.max(22, innerWidth / 16)));
-    for(var i = 0; i < n; i++){
-      motes.push({
-        x: Math.random() * W,
-        y: Math.random() * H,
-        r: (0.7 + Math.random() * 2.1) * dpr,
-        v: (0.08 + Math.random() * 0.34) * dpr,
-        sway: Math.random() * Math.PI * 2,
-        swaySpeed: 0.004 + Math.random() * 0.012,
-        amp: (0.2 + Math.random() * 0.8) * dpr,
-        a: 0.18 + Math.random() * 0.5,
-        warm: Math.random() < 0.34
-      });
+  var m = new THREE.Mesh(
+    new THREE.PlaneGeometry(size, size),
+    new THREE.MeshBasicMaterial({ map:_shadowTex, transparent:true, depthWrite:false, fog:false })
+  );
+  m.rotation.x = -Math.PI/2;
+  m.position.y = 0.02;
+  return m;
+}
+
+/* ============================ props ============================ */
+function makeHouse(){
+  var g = new THREE.Group();
+  var i, p;
+  /* stilts */
+  for(i=0;i<4;i++){
+    p = new THREE.Mesh(new THREE.CylinderGeometry(.16,.18,2.2,6), M.wood());
+    p.position.set((i%2?1:-1)*2.3, 1.1, (i<2?1:-1)*1.9);
+    g.add(p);
+  }
+  var floor = new THREE.Mesh(new THREE.BoxGeometry(5.4, .3, 4.6), M.wood());
+  floor.position.y = 2.3; g.add(floor);
+  var walls = new THREE.Mesh(new THREE.BoxGeometry(4.9, 2.2, 4.1), M.wall());
+  walls.position.y = 3.5; g.add(walls);
+  /* hip roof */
+  var roof = new THREE.Mesh(new THREE.ConeGeometry(4.4, 2.0, 4), M.thatch());
+  roof.position.y = 5.6; roof.rotation.y = Math.PI/4; g.add(roof);
+  /* steps */
+  for(i=0;i<4;i++){
+    var s = new THREE.Mesh(new THREE.BoxGeometry(1.5,.18,.5), M.wood());
+    s.position.set(0, .5 + i*.5, 2.6 + (3-i)*.45); g.add(s);
+  }
+  /* windowsill candles (dark until lit) */
+  g.userData.candles = [];
+  for(i=0;i<3;i++){
+    var cg = new THREE.Group();
+    var wax = new THREE.Mesh(new THREE.CylinderGeometry(.07,.08,.34,6), mat(0xf0e3cf));
+    wax.position.y = .17; cg.add(wax);
+    cg.position.set(-1.3 + i*1.3, 3.2, 2.08);
+    cg.visible = true;
+    g.add(cg);
+    g.userData.candles.push(cg);
+  }
+  return g;
+}
+
+function makeBanyan(){
+  var g = new THREE.Group();
+  var trunk = new THREE.Mesh(new THREE.CylinderGeometry(.85, 1.5, 6.5, 9), M.wood());
+  trunk.position.y = 3.2; g.add(trunk);
+  /* aerial roots */
+  var i, a, r;
+  for(i=0;i<7;i++){
+    a = (i/7)*Math.PI*2;
+    r = new THREE.Mesh(new THREE.CylinderGeometry(.1,.16, 3.2 + Math.random()*1.6, 5), M.wood());
+    r.position.set(Math.cos(a)*(1.6+Math.random()*.9), 1.9, Math.sin(a)*(1.6+Math.random()*.9));
+    r.rotation.z = (Math.random()-.5)*.3;
+    g.add(r);
+  }
+  /* canopy */
+  var blobs = [[0,7.6,0,4.3],[-3,6.8,1.4,3.0],[3.1,6.9,-1.2,3.1],[.6,8.6,-2.6,2.6],[-1.4,8.3,2.6,2.5]];
+  for(i=0;i<blobs.length;i++){
+    var b = blobs[i];
+    var s = new THREE.Mesh(new THREE.SphereGeometry(b[3], 9, 7), i%2 ? M.leaf() : M.leafHi());
+    s.position.set(b[0], b[1], b[2]); s.scale.y = .72;
+    g.add(s);
+  }
+  g.userData.lanterns = [];
+  var spots = [[-2.4,5.2,1.6],[2.2,5.0,-1.4],[0,4.6,2.6]];
+  for(i=0;i<spots.length;i++){
+    var L = makeLantern(0xff6fa6, 1.5, false);
+    L.position.set(spots[i][0], spots[i][1], spots[i][2]);
+    g.add(L);
+    g.userData.lanterns.push(L);
+  }
+  return g;
+}
+
+function makeRockCreek(){
+  var g = new THREE.Group();
+  var creek = new THREE.Mesh(new THREE.PlaneGeometry(13, 46), M.water());
+  creek.rotation.x = -Math.PI/2; creek.position.set(4.5, .05, 2); creek.rotation.z = .18;
+  g.add(creek);
+  var rock = new THREE.Mesh(new THREE.IcosahedronGeometry(2.1, 0), M.stone());
+  rock.position.set(0, 1.0, 0); rock.scale.set(1.3, .78, 1.05); rock.rotation.y = .6;
+  g.add(rock);
+  var i, s, a;
+  for(i=0;i<9;i++){
+    a = Math.random()*Math.PI*2;
+    s = new THREE.Mesh(new THREE.IcosahedronGeometry(.3 + Math.random()*.5, 0), M.stone());
+    s.position.set(Math.cos(a)*(2.6+Math.random()*3), .18, Math.sin(a)*(2.6+Math.random()*3));
+    g.add(s);
+  }
+  g.userData.floats = [];
+  return g;
+}
+
+function makePagoda(){
+  var g = new THREE.Group();
+  /* terraces */
+  var plat = new THREE.Mesh(new THREE.BoxGeometry(15, .8, 15), M.stone());
+  plat.position.y = .4; g.add(plat);
+  var plat2 = new THREE.Mesh(new THREE.BoxGeometry(11, .8, 11), M.stone());
+  plat2.position.y = 1.15; g.add(plat2);
+  /* stacked octagonal tiers */
+  var y = 1.6, r = 4.2, i;
+  for(i=0;i<4;i++){
+    var tier = new THREE.Mesh(new THREE.CylinderGeometry(r*.84, r, 1.0, 8), M.gold());
+    tier.position.y = y + .5;
+    g.add(tier);
+    y += 1.0; r *= .84;
+  }
+  /* bell */
+  var bell = new THREE.Mesh(new THREE.SphereGeometry(r*1.05, 10, 8, 0, Math.PI*2, 0, Math.PI*0.56), M.gold());
+  bell.position.y = y + .1; bell.scale.y = 1.5;
+  g.add(bell);
+  /* spire + hti */
+  var spire = new THREE.Mesh(new THREE.ConeGeometry(r*.72, 6.5, 8), M.gold());
+  spire.position.y = y + 3.9; g.add(spire);
+  var hti = new THREE.Mesh(new THREE.TorusGeometry(.65, .13, 5, 10), M.gold());
+  hti.position.y = y + 7.0; hti.rotation.x = Math.PI/2; g.add(hti);
+  var finial = new THREE.Mesh(new THREE.SphereGeometry(.42, 9, 8), mat(0xffe9a8, { emissive: 0x6a5118 }));
+  finial.position.y = y + 7.7; g.add(finial);
+  g.userData.gold = [];
+  g.traverse(function(o){ if(o.isMesh && o.material && o.material.emissive) g.userData.gold.push(o); });
+  g.userData.finial = finial;
+  /* oil-lamp shelf along the front edge */
+  g.userData.lamps = [];
+  for(i=0;i<7;i++){
+    var cup = new THREE.Mesh(new THREE.CylinderGeometry(.22,.17,.26,7), mat(0x7a5436));
+    cup.position.set(-5.4 + i*1.8, 1.7, 6.2);
+    g.add(cup);
+    g.userData.lamps.push(cup);
+  }
+  return g;
+}
+
+function makeArch(){
+  var g = new THREE.Group();
+  var i;
+  for(i=0;i<2;i++){
+    var p = new THREE.Mesh(new THREE.CylinderGeometry(.16,.2,5.2,6), M.bamboo());
+    p.position.set((i?1:-1)*3.4, 2.6, 0);
+    g.add(p);
+  }
+  var beam = new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,7.2,6), M.bamboo());
+  beam.position.y = 5.1; beam.rotation.z = Math.PI/2;
+  g.add(beam);
+  g.userData.lanterns = [];
+  for(i=0;i<5;i++){
+    var L = makeLantern(0xff7fae, 1.5, false);
+    L.position.set(-2.6 + i*1.3, 4.3 - (i===2?.35:0), 0);
+    g.add(L);
+    g.userData.lanterns.push(L);
+  }
+  return g;
+}
+
+/* scatter of bushes + bamboo so the field isn't empty */
+function scatter(){
+  var g = new THREE.Group(), i, x, z, d, k;
+  for(i=0;i<110;i++){
+    x = -55 + Math.random()*110;
+    z = -82 + Math.random()*100;
+    /* keep clear of the path and the stations */
+    var near = Math.abs(x) < 6 && z > -76;
+    for(k=0;k<STATION_POS.length;k++){
+      d = Math.hypot(x - STATION_POS[k].x, z - STATION_POS[k].z);
+      if(d < 11) near = true;
     }
-  }
-  function dot(p){
-    var c = p.warm ? "255,207,150" : "255,170,205";
-    var g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.r * 4);
-    g.addColorStop(0, "rgba(" + c + "," + p.a + ")");
-    g.addColorStop(1, "rgba(" + c + ",0)");
-    ctx.fillStyle = g;
-    ctx.beginPath(); ctx.arc(p.x, p.y, p.r * 4, 0, 6.2832); ctx.fill();
-  }
-  function burst(cx, cy){
-    for(var i = 0; i < 110; i++){
-      var ang = Math.random() * Math.PI * 2;
-      var sp = (1.6 + Math.random() * 6.4) * dpr;
-      petals.push({
-        x: cx, y: cy,
-        vx: Math.cos(ang) * sp,
-        vy: Math.sin(ang) * sp - 2.4 * dpr,
-        w: (3 + Math.random() * 5) * dpr,
-        h: (4.5 + Math.random() * 7) * dpr,
-        rot: Math.random() * Math.PI,
-        spin: (Math.random() - 0.5) * 0.22,
-        life: 1,
-        fade: 0.006 + Math.random() * 0.009,
-        warm: Math.random() < 0.4
-      });
-    }
-    if(!running) start();
-  }
-  function frame(){
-    ctx.clearRect(0, 0, W, H);
-    for(var i = 0; i < motes.length; i++){
-      var m = motes[i];
-      m.sway += m.swaySpeed;
-      m.y -= m.v;
-      m.x += Math.cos(m.sway) * m.amp;
-      if(m.y < -20 * dpr){ m.y = H + 20 * dpr; m.x = Math.random() * W; }
-      dot(m);
-    }
-    for(var j = petals.length - 1; j >= 0; j--){
-      var p = petals[j];
-      p.vy += 0.085 * dpr; p.vx *= 0.991; p.vy *= 0.994;
-      p.x += p.vx; p.y += p.vy; p.rot += p.spin; p.life -= p.fade;
-      if(p.life <= 0 || p.y > H + 60 * dpr){ petals.splice(j, 1); continue; }
-      ctx.save();
-      ctx.translate(p.x, p.y); ctx.rotate(p.rot);
-      ctx.fillStyle = (p.warm ? "rgba(255,207,150," : "rgba(255,150,190,") + Math.max(0, p.life) + ")";
-      ctx.beginPath(); ctx.ellipse(0, 0, p.w, p.h, 0, 0, 6.2832); ctx.fill();
-      ctx.restore();
-    }
-    requestAnimationFrame(frame);
-  }
-  function start(){ running = true; requestAnimationFrame(frame); }
-  function staticSky(){
-    ctx.clearRect(0, 0, W, H);
-    for(var i = 0; i < motes.length; i++) dot(motes[i]);
-  }
-
-  resize();
-  seedMotes();
-  addEventListener("resize", function(){ resize(); seedMotes(); if(reduced) staticSky(); });
-  if(reduced) staticSky(); else start();
-
-  /* ---------- a soft chime, only ever after her tap ---------- */
-  function chime(){
-    try{
-      var AC = window.AudioContext || window.webkitAudioContext;
-      if(!AC) return;
-      var ac = new AC();
-      [[784, 0], [1046.5, 0.14], [1318.5, 0.3]].forEach(function(pair){
-        var o = ac.createOscillator(), g = ac.createGain();
-        o.type = "sine"; o.frequency.value = pair[0];
-        var t = ac.currentTime + pair[1];
-        g.gain.setValueAtTime(0, t);
-        g.gain.linearRampToValueAtTime(0.1, t + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5);
-        o.connect(g); g.connect(ac.destination);
-        o.start(t); o.stop(t + 1.6);
-      });
-    }catch(e){}
-  }
-
-  /* ---------- build the grid ---------- */
-  var grid = document.getElementById("grid");
-  for(var i = 1; i <= 9; i++){
-    var b = document.createElement("button");
-    b.type = "button";
-    b.className = "lantern";
-    b.dataset.no = i;
-    b.setAttribute("aria-label", "မီးပုံး " + mmDigits(i));
-    b.innerHTML = '<span class="halo"></span><span class="body"><span class="no">' + mmDigits(i) + '</span></span>';
-    grid.appendChild(b);
-  }
-
-  /* ---------- reveal ---------- */
-  var result = document.getElementById("result");
-  var numEl = document.getElementById("num");
-  var wordsEl = document.getElementById("words");
-  var labelEl = document.getElementById("resultLabel");
-  var lockedEl = document.getElementById("locked");
-  var copyBtn = document.getElementById("copy");
-  var current = null;
-
-  function settle(amount){
-    numEl.textContent = mmNumber(amount);
-    wordsEl.textContent = mmWords(amount);
-    /* သတ်မှတ်ပြီးသွားပြီ — ဒီလင့်ကို ပြန်ဖွင့်လည်း … ကျပ်ပဲ ဖြစ်မယ် */
-    lockedEl.textContent = "သတ်မှတ်ပြီးသွားပြီ — ဒီလင့်ကို ပြန်ဖွင့်လည်း "
-      + mmNumber(amount) + " ကျပ်ပဲ ဖြစ်မယ်။";
-  }
-
-  function roll(amount, done){
-    var dur = 2000, t0 = performance.now(), spread = 450000;
-    (function step(now){
-      var t = Math.min(1, (now - t0) / dur);
-      var e = 1 - Math.pow(1 - t, 3);
-      if(t >= 1){ settle(amount); done(); return; }
-      var wobble = (1 - e) * spread * (Math.random() * 2 - 1);
-      var v = Math.round((amount + wobble) / STEP) * STEP;
-      if(v < MIN) v = MIN;
-      if(v > MAX) v = MAX;
-      numEl.textContent = mmNumber(v);
-      requestAnimationFrame(step);
-    })(t0);
-  }
-
-  function show(entry, animate){
-    current = entry;
-    var btn = grid.querySelector('.lantern[data-no="' + entry.no + '"]');
-    grid.classList.add("decided");
-    if(btn) btn.classList.add("chosen");
-    /* မီးပုံးအမှတ် … ထွန်းလင်းလာပြီ */
-    labelEl.textContent = "Suye အတွက် မီးပုံးအမှတ် "
-      + mmDigits(entry.no) + " ထွန်းလင်းလာပြီ";
-    result.hidden = false;
-
-    if(!animate || reduced){ settle(entry.amount); return; }
-
-    chime();
-    if(btn){
-      var r = btn.getBoundingClientRect();
-      burst((r.left + r.width / 2) * dpr, (r.top + r.height * 0.45) * dpr);
-    }
-    roll(entry.amount, function(){
-      if(btn){
-        var r2 = btn.getBoundingClientRect();
-        burst((r2.left + r2.width / 2) * dpr, (r2.top + r2.height * 0.45) * dpr);
+    if(near) continue;
+    if(Math.random() < .55){
+      var b = new THREE.Mesh(new THREE.SphereGeometry(.6 + Math.random()*.9, 6, 5), M.leaf());
+      b.position.set(x, .35, z); b.scale.y = .62;
+      g.add(b);
+    } else {
+      var t = new THREE.Group(), n = 3 + (Math.random()*3|0);
+      for(k=0;k<n;k++){
+        var c = new THREE.Mesh(new THREE.CylinderGeometry(.07,.09, 3 + Math.random()*2.6, 5), M.leafHi());
+        c.position.set((Math.random()-.5)*.8, 1.8, (Math.random()-.5)*.8);
+        c.rotation.z = (Math.random()-.5)*.14;
+        t.add(c);
       }
-    });
+      t.position.set(x, 0, z);
+      g.add(t);
+    }
+  }
+  return g;
+}
+scene.add(scatter());
+
+/* ============================ characters ============================ */
+function thanakaPatch(){
+  var m = new THREE.Mesh(
+    new THREE.CircleGeometry(.082, 10),
+    new THREE.MeshBasicMaterial({ color: 0xeedcae, fog:false })
+  );
+  return m;
+}
+
+function makeGirl(){
+  var g = new THREE.Group();
+  var body = new THREE.Group(); g.add(body);
+
+  var skirt = new THREE.Mesh(new THREE.CylinderGeometry(.33, .46, 1.46, 10), M.htamein());
+  skirt.position.y = .73; body.add(skirt);
+  var hem = new THREE.Mesh(new THREE.CylinderGeometry(.465, .47, .14, 10), mat(0xf0c66a));
+  hem.position.y = .09; body.add(hem);
+
+  var top = new THREE.Mesh(new THREE.CylinderGeometry(.3, .35, .62, 10), M.blouse());
+  top.position.y = 1.72; body.add(top);
+  var neck = new THREE.Mesh(new THREE.CylinderGeometry(.09,.1,.14,7), M.skin());
+  neck.position.y = 2.06; body.add(neck);
+
+  var head = new THREE.Mesh(new THREE.SphereGeometry(.265, 14, 12), M.skin());
+  head.position.y = 2.3; body.add(head);
+  var hair = new THREE.Mesh(new THREE.SphereGeometry(.285, 14, 12), M.hair());
+  hair.position.set(0, 2.33, -.045); hair.scale.set(1, 1.02, 1);
+  body.add(hair);
+  var face = new THREE.Mesh(new THREE.SphereGeometry(.252, 12, 10), M.skin());
+  face.position.set(0, 2.29, .055); body.add(face);
+  var bun = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 9), M.hair());
+  bun.position.set(0, 2.47, -.22); body.add(bun);
+  var flower = new THREE.Mesh(new THREE.SphereGeometry(.07, 8, 7), mat(0xffd9e9, { emissive:0x331420 }));
+  flower.position.set(.19, 2.45, -.14); body.add(flower);
+
+  var tl = thanakaPatch(), tr = thanakaPatch();
+  tl.position.set(-.115, 2.26, .235); tr.position.set(.115, 2.26, .235);
+  body.add(tl); body.add(tr);
+
+  /* arms on pivots so they can swing */
+  function arm(side){
+    var pivot = new THREE.Group();
+    pivot.position.set(side*.33, 1.95, 0);
+    var limb = new THREE.Mesh(new THREE.CylinderGeometry(.075,.065,.78,7), M.skin());
+    limb.position.y = -.39; pivot.add(limb);
+    var sleeve = new THREE.Mesh(new THREE.CylinderGeometry(.11,.095,.26,8), M.blouse());
+    sleeve.position.y = -.12; pivot.add(sleeve);
+    body.add(pivot);
+    return pivot;
+  }
+  var armL = arm(-1), armR = arm(1);
+
+  /* her candle, in the right hand */
+  var candle = new THREE.Group();
+  var wax = new THREE.Mesh(new THREE.CylinderGeometry(.055,.065,.3,7), mat(0xf6ead6));
+  wax.position.y = .15; candle.add(wax);
+  var fl = makeFlame(1.0); fl.position.y = .38; candle.add(fl);
+  candle.position.set(0, -.8, .12);
+  armR.add(candle);
+
+  g.userData = { body: body, armL: armL, armR: armR, candle: candle, head: head };
+  return g;
+}
+
+function makeBoy(){
+  var g = new THREE.Group();
+  var body = new THREE.Group(); g.add(body);
+  var longyi = new THREE.Mesh(new THREE.CylinderGeometry(.34, .42, 1.42, 10), M.longyi());
+  longyi.position.y = .71; body.add(longyi);
+  var shirt = new THREE.Mesh(new THREE.CylinderGeometry(.33, .38, .72, 10), M.shirt());
+  shirt.position.y = 1.76; body.add(shirt);
+  var neck = new THREE.Mesh(new THREE.CylinderGeometry(.1,.11,.14,7), M.skin());
+  neck.position.y = 2.14; body.add(neck);
+  var head = new THREE.Mesh(new THREE.SphereGeometry(.275, 14, 12), M.skin());
+  head.position.y = 2.38; body.add(head);
+  var hair = new THREE.Mesh(new THREE.SphereGeometry(.29, 12, 10, 0, Math.PI*2, 0, Math.PI*.62), M.hair());
+  hair.position.set(0, 2.40, -.02); body.add(hair);
+  function arm(side){
+    var p = new THREE.Group(); p.position.set(side*.36, 2.0, 0);
+    var limb = new THREE.Mesh(new THREE.CylinderGeometry(.08,.07,.8,7), M.skin());
+    limb.position.y = -.4; p.add(limb);
+    var sl = new THREE.Mesh(new THREE.CylinderGeometry(.115,.1,.28,8), M.shirt());
+    sl.position.y = -.13; p.add(sl);
+    body.add(p); return p;
+  }
+  var aL = arm(-1), aR = arm(1);
+  aL.rotation.x = -.45; aR.rotation.x = -.45;
+  /* he is holding the big last lantern */
+  var big = makeLantern(0xff7fae, 2.6, false);
+  big.position.set(0, -.95, .3);
+  aR.add(big);
+  g.userData = { body: body, big: big, armL: aL, armR: aR };
+  return g;
+}
+
+var player = makeGirl();
+player.position.set(0, 0, 3);
+scene.add(player);
+var pShadow = blobShadow(2.0); scene.add(pShadow);
+
+var candleLight = new THREE.PointLight(0xffb964, 1.7, 15, 2);
+candleLight.position.set(0, 1.6, 0);
+scene.add(candleLight);
+
+/* ============================ stations ============================ */
+var hemiTarget = 0.55;
+
+var houseObj  = makeHouse();   houseObj.position.set(STATION_POS[0].x, 0, STATION_POS[0].z);
+var treeObj   = makeBanyan();  treeObj.position.set(STATION_POS[1].x, 0, STATION_POS[1].z);
+var rockObj   = makeRockCreek();rockObj.position.set(STATION_POS[2].x, 0, STATION_POS[2].z);
+var pagObj    = makePagoda();  pagObj.position.set(STATION_POS[3].x, 0, STATION_POS[3].z);
+var archObj   = makeArch();    archObj.position.set(STATION_POS[4].x, 0, STATION_POS[4].z);
+scene.add(houseObj); scene.add(treeObj); scene.add(rockObj); scene.add(pagObj); scene.add(archObj);
+
+var gintoki = makeBoy();
+gintoki.position.set(STATION_POS[4].x, 0, STATION_POS[4].z - 1.4);
+gintoki.rotation.y = Math.PI;
+scene.add(gintoki);
+scene.add((function(){ var s = blobShadow(1.9); s.position.set(gintoki.position.x, .02, gintoki.position.z); return s; })());
+
+var drifters = [];
+
+var STATIONS = [
+  {
+    key: "house",
+    name: "အိမ်ရှေ့",
+    title: "ပြတင်းပေါက်က ဖယောင်းတိုင်",
+    text: "ပြတင်းပေါက်သုံးခုမှာ မီထွန်းလိုက်တော့ အိမ်တစ်အိမ်လုံး လင်းသွားတယ်။ လှေကါးအောက်က တတ်ဖြောင့်ထဲမှာ တစ်ခုခု သိမ်းထားတာ တွေ့တယ်။",
+    found: "ပထမဆုံး လက်ဆောင် — တွေ့ပြီ",
+    obj: houseObj,
+    light: function(){
+      houseObj.userData.candles.forEach(function(c){
+        var f = makeFlame(.95); f.position.y = .36; c.add(f);
+      });
+      hemiTarget = 0.66;
+    }
+  },
+  {
+    key: "tree",
+    name: "ညောင်ပင်",
+    title: "ညောင်ပင်ကြီးရဲ့ အကိုင်း",
+    text: "မီးပုံးသုံးလုံးကို အကိုင်းမှာ ချိတ်ဆွဲလိုက်တော့ အရိပ်တွေကြားထဲက အရုပ်တစ်ခု လင်းလာတယ်။",
+    found: "ဒုတိယ လက်ဆောင် — တွေ့ပြီ",
+    obj: treeObj,
+    light: function(){
+      treeObj.userData.lanterns.forEach(lightLantern);
+      hemiTarget = 0.78;
+    }
+  },
+  {
+    key: "creek",
+    name: "ချောင်းနားက ကျောက်တုံး",
+    title: "ရေပေါ်မျှောလိုက်တဲ့ မီး",
+    text: "ကျောက်တုံးပေါ် ထိုင်ပြီး ဖယောင်းတိုင်လေးတွေကို ရေထဲ မျှောလိုက်တယ်။ မီးတွေ ရေစီးအတိုင်း ပါမျှောသွားတယ်။ ကျောက်တုံးအောက်မှာ...",
+    found: "တတိယ လက်ဆောင် — တွေ့ပြီ",
+    obj: rockObj,
+    light: function(){
+      for(var i=0;i<4;i++){
+        var d = new THREE.Group();
+        var leaf = new THREE.Mesh(new THREE.CylinderGeometry(.22,.18,.08,8), mat(0x6a4a2c));
+        d.add(leaf);
+        var f = makeFlame(.8); f.position.y = .14; d.add(f);
+        d.position.set(rockObj.position.x + 3 + Math.random()*4, .18, rockObj.position.z - 6 - i*5);
+        scene.add(d);
+        drifters.push(d);
+      }
+      hemiTarget = 0.9;
+    }
+  },
+  {
+    key: "pagoda",
+    name: "ဘုရား",
+    title: "ဘုရားရင်ပြင်က ဆီမီး",
+    text: "သီတင်းကျွတ်ဆိုတာ မြတ်စွာဘုရား တာဝတိံသာနတ်ပြည်က ပြန်ဆင်းကြွလာတဲ့နေ့ပါ။ ဒါကြောင့် လူတိုင်း မီထွန်းပြီး မိဘများကို ကန်တော့ကြတယ်။ ဆီမီးခုံအောက်မှာ...",
+    found: "စတုတ္ထ လက်ဆောင် — တွေ့ပြီ",
+    obj: pagObj,
+    light: function(){
+      pagObj.userData.lamps.forEach(function(c){
+        var f = makeFlame(.9); f.position.y = .2; c.add(f);
+      });
+      pagObj.userData.gold.forEach(function(m){
+        m.material.emissive.setHex(0x8a6a1e);
+      });
+      pagObj.userData.finial.material.emissive.setHex(0xbfa047);
+      hemiTarget = 1.05;
+    }
+  },
+  {
+    key: "gintoki",
+    name: "နောက်ဆုံးမီးပုံး",
+    title: "နောက်ဆုံး မီးပုံး",
+    text: "",
+    found: "",
+    obj: archObj,
+    locked: true,
+    light: function(){
+      archObj.userData.lanterns.forEach(lightLantern);
+      lightLantern(gintoki.userData.big);
+      hemiTarget = 1.3;
+    }
+  }
+];
+
+var ACT_LABEL = ["မီးထွန်း","ချိတ်မယ်","မျှောမယ်","ပူဇော်မယ်","သွားမယ်"];
+var ACT_R     = [7, 7.5, 7, 11, 7];
+
+/* beacon above each unfound station so she can find it in the dark */
+STATIONS.forEach(function(st, i){
+  var p = STATION_POS[i];
+  var ring = new THREE.Mesh(
+    new THREE.RingGeometry(1.9, 2.5, 26),
+    new THREE.MeshBasicMaterial({ color:0xff9ec8, transparent:true, opacity:.5, side:THREE.DoubleSide, fog:false, depthWrite:false })
+  );
+  ring.rotation.x = -Math.PI/2; ring.position.set(p.x, .08, p.z);
+  scene.add(ring);
+  var beam = makeGlow(PINK, 7.5, .55);
+  beam.position.set(p.x, 5.0, p.z);
+  scene.add(beam);
+  st.ring = ring; st.beam = beam; st.pos = p; st.idx = i;
+});
+
+/* things the player cannot walk through */
+var BLOCKERS = [
+  { x: STATION_POS[0].x, z: STATION_POS[0].z, r: 3.4 },
+  { x: STATION_POS[1].x, z: STATION_POS[1].z, r: 2.2 },
+  { x: STATION_POS[2].x, z: STATION_POS[2].z, r: 2.6 },
+  { x: STATION_POS[3].x, z: STATION_POS[3].z, r: 8.2 },
+  { x: gintoki.position.x, z: gintoki.position.z, r: 1.2 }
+];
+
+/* ============================ state ============================ */
+var state = { found: {}, amount: 0 };
+try{
+  var raw = localStorage.getItem(SAVE_KEY);
+  if(raw){
+    var s = JSON.parse(raw);
+    if(s && typeof s === "object"){
+      state.found = s.found || {};
+      state.amount = (typeof s.amount === "number" && s.amount >= MINP && s.amount <= MAXP) ? s.amount : 0;
+    }
+  }
+}catch(e){}
+function save(){
+  try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){}
+}
+if(location.hash === "#reset"){
+  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  state = { found: {}, amount: 0 };
+}
+function countFound(){
+  var n = 0;
+  STATIONS.forEach(function(st){ if(state.found[st.key]) n++; });
+  return n;
+}
+
+/* ============================ HUD ============================ */
+var pipsEl = $("pips"), placeEl = $("place"), actEl = $("act"), hintEl = $("hint");
+STATIONS.forEach(function(){
+  var d = document.createElement("div"); d.className = "pip"; pipsEl.appendChild(d);
+});
+function syncPips(){
+  var kids = pipsEl.children;
+  STATIONS.forEach(function(st, i){
+    if(state.found[st.key]) kids[i].classList.add("on");
+  });
+}
+
+/* restore an already-played session without replaying the story */
+STATIONS.forEach(function(st){
+  if(state.found[st.key]){
+    st.light();
+    st.ring.visible = false; st.beam.visible = false;
+  }
+});
+syncPips();
+
+/* ============================ input ============================ */
+var joy = { active:false, id:null, cx:0, cy:0, x:0, y:0 };
+var keys = {};
+var look = { active:false, id:null, lastX:0 };
+var camYaw = Math.PI, camYawTarget = Math.PI;
+var stickEl = $("stick"), knobEl = $("knob");
+var STICK_R = 52;
+
+function setKnob(dx, dy){
+  knobEl.style.transform = "translate(" + dx + "px," + dy + "px)";
+}
+function startJoy(e, x, y){
+  joy.active = true; joy.id = e.pointerId; joy.cx = x; joy.cy = y;
+  stickEl.style.left = (x - 66) + "px";
+  stickEl.style.top  = (y - 66) + "px";
+  stickEl.style.bottom = "auto";
+  stickEl.classList.add("live");
+  hintEl.classList.remove("show");
+}
+function moveJoy(x, y){
+  var dx = x - joy.cx, dy = y - joy.cy;
+  var d = Math.hypot(dx, dy);
+  if(d > STICK_R){ dx = dx/d*STICK_R; dy = dy/d*STICK_R; d = STICK_R; }
+  setKnob(dx, dy);
+  joy.x = dx/STICK_R; joy.y = dy/STICK_R;
+}
+function endJoy(){
+  joy.active = false; joy.id = null; joy.x = joy.y = 0;
+  setKnob(0,0); stickEl.classList.remove("live");
+}
+
+addEventListener("pointerdown", function(e){
+  if(e.target.closest("button") || e.target.closest("a") || e.target.closest(".veil")) return;
+  if(e.clientX < innerWidth*0.52 && !joy.active){ startJoy(e, e.clientX, e.clientY); }
+  else if(!look.active){ look.active = true; look.id = e.pointerId; look.lastX = e.clientX; }
+}, { passive:true });
+
+addEventListener("pointermove", function(e){
+  if(joy.active && e.pointerId === joy.id){ moveJoy(e.clientX, e.clientY); }
+  else if(look.active && e.pointerId === look.id){
+    camYawTarget -= (e.clientX - look.lastX) * 0.007;
+    look.lastX = e.clientX;
+  }
+}, { passive:true });
+
+function up(e){
+  if(joy.active && e.pointerId === joy.id) endJoy();
+  if(look.active && e.pointerId === look.id){ look.active = false; look.id = null; }
+}
+addEventListener("pointerup", up, { passive:true });
+addEventListener("pointercancel", up, { passive:true });
+
+addEventListener("keydown", function(e){
+  keys[e.key.toLowerCase()] = true;
+  if(e.key === " " && actEl.classList.contains("show")){ e.preventDefault(); actEl.click(); }
+});
+addEventListener("keyup", function(e){ keys[e.key.toLowerCase()] = false; });
+
+/* ============================ camera + loop ============================ */
+var CAM_DIST = 7.0, CAM_H = 3.9, SPEED = 7.4;
+var heading = Math.PI, walkPhase = 0, running = false, paused = true;
+var tmp = new THREE.Vector3();
+var clock = new THREE.Clock();
+
+function nearestStation(){
+  var best = null, bd = 1e9;
+  for(var i=0;i<STATIONS.length;i++){
+    var st = STATIONS[i];
+    if(state.found[st.key]) continue;
+    var d = Math.hypot(player.position.x - st.pos.x, player.position.z - st.pos.z);
+    if(d < bd){ bd = d; best = st; }
+  }
+  return best ? { st: best, d: bd } : null;
+}
+
+var activeStation = null;
+
+function tick(){
+  requestAnimationFrame(tick);
+  var dt = Math.min(0.05, clock.getDelta());
+  var t  = clock.elapsedTime;
+
+  /* ---- movement ---- */
+  var jx = joy.x, jy = joy.y;
+  if(keys.w || keys.arrowup)    jy -= 1;
+  if(keys.s || keys.arrowdown)  jy += 1;
+  if(keys.a || keys.arrowleft)  jx -= 1;
+  if(keys.d || keys.arrowright) jx += 1;
+  var mag = Math.hypot(jx, jy);
+  if(mag > 1){ jx /= mag; jy /= mag; mag = 1; }
+
+  var moving = !paused && mag > 0.08;
+  if(moving){
+    var fx = Math.sin(camYaw), fz = Math.cos(camYaw);
+    var rx = -Math.cos(camYaw), rz = Math.sin(camYaw);
+    var vx = fx*(-jy) + rx*jx;
+    var vz = fz*(-jy) + rz*jx;
+    var vl = Math.hypot(vx, vz) || 1;
+    vx /= vl; vz /= vl;
+
+    var nx = player.position.x + vx*SPEED*mag*dt;
+    var nz = player.position.z + vz*SPEED*mag*dt;
+
+    /* blockers */
+    for(var b=0;b<BLOCKERS.length;b++){
+      var B = BLOCKERS[b];
+      var ddx = nx - B.x, ddz = nz - B.z, dd = Math.hypot(ddx, ddz);
+      if(dd < B.r){ nx = B.x + ddx/dd*B.r; nz = B.z + ddz/dd*B.r; }
+    }
+    player.position.x = Math.max(-48, Math.min(48, nx));
+    player.position.z = Math.max(-80, Math.min(12, nz));
+
+    heading = Math.atan2(vx, vz);
+    walkPhase += dt * 9.5 * mag;
+    if(!look.active) camYawTarget += ((heading - camYawTarget + Math.PI*3) % (Math.PI*2) - Math.PI) * Math.min(1, dt*1.9);
+  } else {
+    walkPhase += dt * 1.1;
   }
 
-  grid.addEventListener("click", function(ev){
-    var btn = ev.target.closest(".lantern");
-    if(!btn || current) return;
-    var entry = { no: +btn.dataset.no, amount: drawAmount(), at: new Date().toISOString() };
-    save(entry);
-    show(entry, true);
-    result.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "nearest" });
-  });
+  /* face + bob */
+  var hd = (heading - player.rotation.y + Math.PI*3) % (Math.PI*2) - Math.PI;
+  player.rotation.y += hd * Math.min(1, dt*11);
+  var ud = player.userData;
+  var sw = moving ? Math.sin(walkPhase) : 0;
+  ud.body.position.y = moving ? Math.abs(Math.sin(walkPhase))*0.075 : Math.sin(t*1.6)*0.016;
+  ud.body.rotation.z = sw * 0.035;
+  ud.armL.rotation.x = sw * 0.5;
+  ud.armR.rotation.x = -0.95 + sw * 0.12;      /* she keeps the candle up */
+  ud.armR.rotation.z = -0.12;
 
-  copyBtn.addEventListener("click", function(){
-    if(!current) return;
-    /* ငါ့မီးပုံးအမှတ် … မှာ … ကျပ် (…) ပါတယ် 💗 */
-    var text = "Gintoki ရေ၊ Suye ရဲ့ မီးပုံးအမှတ် "
-      + mmDigits(current.no) + " မှာ " + mmNumber(current.amount)
-      + " ကျပ် (" + mmWords(current.amount) + ") ပါတယ် 💗";
-    function flash(label){
-      copyBtn.textContent = label;
-      setTimeout(function(){ copyBtn.textContent = "ကော်ပီကူးယူ"; }, 2600);
-    }
-    function fallback(){
-      try{
-        var range = document.createRange();
-        range.selectNodeContents(document.querySelector(".amount"));
-        var sel = getSelection(); sel.removeAllRanges(); sel.addRange(range);
-      }catch(e){}
-      /* ရွေးထားပြီ — ကော်ပီကူးပါ */
-      flash("ရွေးထားပြီ — ကော်ပီကူးပါ");
-    }
-    if(navigator.clipboard && navigator.clipboard.writeText){
-      /* ကော်ပီကူးပြီ — ပို့လိုက် */
-      navigator.clipboard.writeText(text).then(function(){
-        flash("ကော်ပီကူးပြီ — ပို့လိုက်");
-      }, fallback);
-    } else { fallback(); }
-  });
+  pShadow.position.set(player.position.x, 0.02, player.position.z);
+  candleLight.position.set(player.position.x, 1.9, player.position.z);
 
-  var saved = load();
-  if(saved) show(saved, false);
+  /* gintoki waits, shifting his weight */
+  gintoki.userData.body.position.y = Math.sin(t*1.3)*0.02;
+  gintoki.userData.armR.rotation.x = -0.45 + Math.sin(t*0.9)*0.05;
+
+  /* ---- candle flicker ---- */
+  for(var f=0;f<FLAMES.length;f++){
+    var fl = FLAMES[f];
+    var k = 0.84 + Math.sin(t*7.3 + fl.userData.seed)*0.1 + Math.sin(t*17.1 + fl.userData.seed*2)*0.06;
+    fl.userData.halo.scale.set(1.5*k, 1.5*k, 1);
+    fl.userData.core.scale.set(1, 1.8*k, 1);
+  }
+  candleLight.intensity = 1.55 + Math.sin(t*8.1)*0.14;
+  hemi.intensity += (hemiTarget - hemi.intensity) * Math.min(1, dt*0.8);
+
+  /* ---- floating candles drift downstream ---- */
+  for(var i=0;i<drifters.length;i++){
+    var d = drifters[i];
+    d.position.z += dt * 1.5;
+    d.position.x += Math.sin(t*0.7 + i)*dt*0.3;
+    d.rotation.y += dt*0.5;
+    if(d.position.z > rockObj.position.z + 20) d.position.z = rockObj.position.z - 22;
+  }
+
+  /* ---- beacons ---- */
+  var pulse = 0.4 + Math.sin(t*2.2)*0.18;
+  for(var s2=0;s2<STATIONS.length;s2++){
+    var st2 = STATIONS[s2];
+    if(!st2.ring.visible) continue;
+    st2.ring.material.opacity = pulse;
+    var sc = 7.5 * (1 + Math.sin(t*2.2 + s2)*0.07);
+    st2.beam.scale.set(sc, sc, 1);
+  }
+
+  /* ---- proximity ---- */
+  if(!paused){
+    var near = nearestStation();
+    var done = countFound();
+    if(near && near.d < 17){
+      placeEl.textContent = near.st.name;
+      placeEl.classList.add("show");
+    } else {
+      placeEl.classList.remove("show");
+    }
+    var canAct = near && near.d < ACT_R[near.st.idx] && (!near.st.locked || done >= 4);
+    if(canAct){
+      if(activeStation !== near.st){
+        activeStation = near.st;
+        actEl.textContent = ACT_LABEL[near.st.idx];
+        actEl.classList.add("show");
+      }
+    } else {
+      if(activeStation){ activeStation = null; actEl.classList.remove("show"); }
+      if(near && near.st.locked && near.d < 9 && done < 4){
+        hintEl.textContent = "အရင် နေရာ ၆ ခုမှာ မီထွန်းပါဦး";
+        hintEl.classList.add("show");
+      } else if(hintEl.textContent.indexOf("အရင်") === 0){
+        hintEl.classList.remove("show");
+      }
+    }
+  }
+
+  /* ---- camera ---- */
+  camYaw += ((camYawTarget - camYaw + Math.PI*3) % (Math.PI*2) - Math.PI) * Math.min(1, dt*4.5);
+  tmp.set(
+    player.position.x - Math.sin(camYaw)*CAM_DIST,
+    CAM_H,
+    player.position.z - Math.cos(camYaw)*CAM_DIST
+  );
+  camera.position.lerp(tmp, Math.min(1, dt*6));
+  camera.lookAt(player.position.x, 1.62, player.position.z);
+
+  renderer.render(scene, camera);
+}
+
+addEventListener("resize", function(){
+  camera.aspect = innerWidth/innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+/* ============================ sound ============================ */
+function chime(notes){
+  try{
+    var AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    var ac = new AC();
+    notes.forEach(function(p){
+      var o = ac.createOscillator(), g = ac.createGain();
+      o.type = "sine"; o.frequency.value = p[0];
+      var tt = ac.currentTime + p[1];
+      g.gain.setValueAtTime(0, tt);
+      g.gain.linearRampToValueAtTime(0.09, tt + 0.02);
+      g.gain.exponentialRampToValueAtTime(0.0001, tt + 1.4);
+      o.connect(g); g.connect(ac.destination);
+      o.start(tt); o.stop(tt + 1.5);
+    });
+  }catch(e){}
+}
+var FIND_CHIME  = [[784,0],[1046.5,0.12]];
+var PRIZE_CHIME = [[784,0],[1046.5,0.14],[1318.5,0.3],[1568,0.46]];
+
+/* ============================ story cards ============================ */
+var cardEl = $("card");
+function showCard(st){
+  paused = true;
+  $("cardStop").textContent = "နေရာ " + mmD(st.idx + 1) + " / " + mmD(5);
+  $("cardTitle").textContent = st.title;
+  $("cardText").textContent = st.text;
+  $("cardFound").textContent = st.found;
+  cardEl.hidden = false;
+  cardEl.classList.remove("fading");
+}
+$("cardNext").addEventListener("click", function(){
+  cardEl.classList.add("fading");
+  setTimeout(function(){ cardEl.hidden = true; paused = false; }, REDUCED ? 0 : 560);
+});
+
+/* ============================ finale ============================ */
+var prizeEl = $("prize"), numEl = $("num"), wordsEl = $("words"), lockedEl = $("locked");
+var FINALE_TEXT = "နှစ်ယောက်သား နောက်ဆုံးမီးပုံးကို အတူထွန်းလိုက်တော့ ရွာတစ်ရွာလုံး လင်းသွားပြီ။ ရှာတွေ့ထားတဲ့ လက်ဆောင် ၆ ခုကို ဖွင့်လိုက်တော့...";
+
+function settle(a){
+  numEl.textContent = mmN(a);
+  wordsEl.textContent = mmWords(a);
+  lockedEl.textContent = "သတ်မှတ်ပြီးသွားပြီ — ဒီလင့်ကို ပြန်ဖွင့်လည်း "
+    + mmN(a) + " ကျပ်ပဲ ဖြစ်မယ်။";
+}
+function roll(a, done){
+  var dur = 2200, t0 = performance.now(), spread = 450000;
+  (function step(now){
+    var k = Math.min(1, (now - t0)/dur);
+    var e = 1 - Math.pow(1 - k, 3);
+    if(k >= 1){ settle(a); if(done) done(); return; }
+    var v = Math.round((a + (1-e)*spread*(Math.random()*2-1))/STEP)*STEP;
+    if(v < MINP) v = MINP;
+    if(v > MAXP) v = MAXP;
+    numEl.textContent = mmN(v);
+    requestAnimationFrame(step);
+  })(t0);
+}
+
+var backBtn = document.createElement("button");
+backBtn.type = "button";
+backBtn.className = "btn ghost";
+backBtn.textContent = "ရွာထဲ ပြန်လျှောက်မယ်";
+backBtn.addEventListener("click", function(){
+  prizeEl.classList.add("fading");
+  setTimeout(function(){ prizeEl.hidden = true; paused = false; }, REDUCED ? 0 : 560);
+});
+
+function showPrize(animate){
+  paused = true;
+  $("prizeText").textContent = FINALE_TEXT;
+  $("prizeNote").textContent = "ဒါ နင့်အတွက်ပဲ။ စခရင်ရှော့ရိုက်ပြီး Gintoki ဆီ ပို့လိုက်။ 💗";
+  prizeEl.hidden = false;
+  prizeEl.classList.remove("fading");
+  if(!prizeEl.querySelector(".btn.ghost")) prizeEl.querySelector(".sheet").appendChild(backBtn);
+  if(animate && !REDUCED){ chime(PRIZE_CHIME); roll(state.amount); }
+  else settle(state.amount);
+}
+
+$("copyBtn").addEventListener("click", function(){
+  var txt = "Gintoki ရေ၊ Suye ရဲ့ မီးပုံးခရီး ပြီးသွားပြီ — "
+    + mmN(state.amount) + " ကျပ် (" + mmWords(state.amount) + ") ရတယ် 💗";
+  var btn = $("copyBtn");
+  function flash(s){
+    btn.textContent = s;
+    setTimeout(function(){ btn.textContent = "ကော်ပီကူးယူ"; }, 2600);
+  }
+  function fallback(){
+    try{
+      var r = document.createRange();
+      r.selectNodeContents(document.querySelector(".amount"));
+      var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    }catch(e){}
+    flash("ရွေးထားပြီ — ကော်ပီကူးပါ");
+  }
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(function(){
+      flash("ကော်ပီကူးပြီ — ပို့လိုက်");
+    }, fallback);
+  } else fallback();
+});
+
+/* ============================ action button ============================ */
+actEl.addEventListener("click", function(){
+  if(!activeStation || paused) return;
+  var st = activeStation;
+  state.found[st.key] = true;
+  st.light();
+  st.ring.visible = false;
+  st.beam.visible = false;
+  syncPips();
+  actEl.classList.remove("show");
+  activeStation = null;
+  hintEl.classList.remove("show");
+
+  if(st.locked){
+    if(!state.amount) state.amount = drawPrize();
+    save();
+    setTimeout(function(){ showPrize(true); }, 650);
+  } else {
+    chime(FIND_CHIME);
+    save();
+    showCard(st);
+  }
+});
+
+/* ============================ start ============================ */
+player.rotation.y = Math.PI;                       /* she starts looking into the village */
+camera.position.set(
+  player.position.x - Math.sin(camYaw)*CAM_DIST,
+  CAM_H,
+  player.position.z - Math.cos(camYaw)*CAM_DIST
+);
+camera.lookAt(player.position.x, 1.75, player.position.z);
+renderer.render(scene, camera);
+
+$("boot").hidden = true;
+var introEl = $("intro");
+var replay = countFound() >= 5 && state.amount > 0;
+if(replay){
+  introEl.querySelector("h1").textContent = "ရွာလေး လင်းနေပြီ";
+  introEl.querySelectorAll("p")[1].textContent = "နင် ဒီခရီးကို ပြီးခဲ့ပြီးပြီ။ လက်ဆောင်ကို ပြန်ကြည့်လို့ရတယ်။";
+  introEl.querySelectorAll("p")[2].textContent = "";
+  $("go").textContent = "လက်ဆောင် ပြန်ကြည့်မယ်";
+}
+introEl.hidden = false;
+
+$("go").addEventListener("click", function(){
+  introEl.classList.add("fading");
+  setTimeout(function(){ introEl.hidden = true; }, REDUCED ? 0 : 620);
+  $("hud").hidden = false;
+  actEl.hidden = false;
+  paused = false;
+  if(replay){ showPrize(false); }
+  else {
+    hintEl.textContent = "ဘယ်ဘက်မှာ လက်မနဲ့ ဆွဲပြီး လမ်းလျှောက်ပါ";
+    hintEl.classList.add("show");
+    setTimeout(function(){
+      if(hintEl.textContent.indexOf("ဘယ်ဘက်") === 0) hintEl.classList.remove("show");
+    }, 7000);
+  }
+  if(!running){ running = true; clock.start(); tick(); }
+});
+
 })();
 </script>
 </body>
