@@ -313,21 +313,40 @@ function drawPrize(){
 
 /* ============================ three.js core ============================ */
 var scene = new THREE.Scene();
-scene.background = new THREE.Color(0x140718);
-scene.fog = new THREE.FogExp2(0x16081b, 0.0125);
+scene.background = new THREE.Color(0x090a1e);
+scene.fog = new THREE.FogExp2(0x161033, 0.0138);
 
 var camera = new THREE.PerspectiveCamera(60, innerWidth/innerHeight, 0.1, 400);
+var MOBILE = matchMedia("(pointer: coarse)").matches && Math.min(innerWidth, innerHeight) < 900;
 var renderer = new THREE.WebGLRenderer({ antialias:true, powerPreference:"high-performance" });
-renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+renderer.setPixelRatio(Math.min(MOBILE ? 2 : 2.5, window.devicePixelRatio || 1));
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 0.92;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
 
-var hemi = new THREE.HemisphereLight(0x4a2a63, 0x140a16, 0.55);
+var hemi = new THREE.HemisphereLight(0x2f4a8c, 0x14101f, 0.22);
 scene.add(hemi);
-var moonLight = new THREE.DirectionalLight(0x9fb0ff, 0.40);
-moonLight.position.set(-50, 70, -60);
+var moonLight = new THREE.DirectionalLight(0xbcccff, 0.44);
+moonLight.position.set(-46, 62, -18);
+moonLight.castShadow = true;
+moonLight.shadow.mapSize.set(MOBILE ? 1024 : 2048, MOBILE ? 1024 : 2048);
+var sc = moonLight.shadow.camera;
+sc.left = -60; sc.right = 60; sc.top = 60; sc.bottom = -60;
+sc.near = 1; sc.far = 190;
+moonLight.shadow.bias = -0.0012;
+moonLight.shadow.normalBias = 0.035;
+moonLight.target.position.set(0, 0, -34);
 scene.add(moonLight);
+scene.add(moonLight.target);
+
+/* a cool rim from the opposite side so silhouettes read against the dark */
+var rim = new THREE.DirectionalLight(0x6f5aa8, 0.13);
+rim.position.set(48, 26, 40);
+scene.add(rim);
 
 /* ============================ small factories ============================ */
 var _texCache = {};
@@ -369,6 +388,7 @@ function makeFlame(size){
   var halo = makeGlow(WARM, 1.5*size, 0.95);
   g.add(halo);
   g.userData.halo = halo;
+  g.userData.base = 1.5*size;
   g.userData.core = core;
   g.userData.seed = Math.random()*9;
   FLAMES.push(g);
@@ -422,38 +442,63 @@ var STATION_POS = [
 ];
 
 function groundTexture(){
-  var S = 1024;
+  var S = 2048;
   var c = document.createElement("canvas"); c.width = c.height = S;
   var g = c.getContext("2d");
+  var i, j, x, y, r;
 
-  g.fillStyle = "#241327"; g.fillRect(0,0,S,S);
-  /* mottled earth */
-  for(var i=0;i<2600;i++){
-    var x = Math.random()*S, y = Math.random()*S, r = 4 + Math.random()*34;
-    g.fillStyle = "rgba(" + (38+Math.random()*26|0) + "," + (22+Math.random()*22|0) + "," + (44+Math.random()*26|0) + ",.5)";
+  /* night grass base */
+  g.fillStyle = "#16261f"; g.fillRect(0,0,S,S);
+  var greens = ["#1b3028","#13241d","#1f3a2b","#182c26","#243f2f"];
+  for(i=0;i<4200;i++){
+    x = Math.random()*S; y = Math.random()*S; r = 10 + Math.random()*90;
+    g.globalAlpha = .18 + Math.random()*.3;
+    g.fillStyle = greens[(Math.random()*greens.length)|0];
     g.beginPath(); g.arc(x,y,r,0,6.2832); g.fill();
   }
-  /* the walked path, start -> each station in order */
-  var pts = [[0,4]].concat(STATION_POS.map(function(s){ return [s.x, s.z]; }))
-                   .map(function(p){ return toTex(p[0], p[1], S, S); });
-  g.lineCap = "round"; g.lineJoin = "round";
-  [[26,"rgba(92,64,84,.5)"],[16,"rgba(126,92,112,.55)"]].forEach(function(pass){
-    g.lineWidth = pass[0]; g.strokeStyle = pass[1];
-    g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
-    for(var i=1;i<pts.length;i++){
-      var p = pts[i-1], q = pts[i];
-      g.quadraticCurveTo((p[0]+q[0])/2 + (i%2?34:-34), (p[1]+q[1])/2, q[0], q[1]);
-    }
-    g.stroke();
-  });
-  /* scuffed pebbles on the path */
-  for(var j=0;j<900;j++){
-    var a = Math.random()*S, b = Math.random()*S;
-    g.fillStyle = "rgba(170,140,160,.09)";
-    g.fillRect(a, b, 2, 2);
+  /* mossy blue-green pools where the moonlight pools */
+  g.globalAlpha = .13;
+  for(i=0;i<260;i++){
+    x = Math.random()*S; y = Math.random()*S; r = 40 + Math.random()*150;
+    g.fillStyle = "#2a4a5c";
+    g.beginPath(); g.arc(x,y,r,0,6.2832); g.fill();
   }
+  g.globalAlpha = 1;
+
+  /* the walked path, start -> each station in order */
+  var pts = [[0,6]].concat(STATION_POS.map(function(st){ return [st.x, st.z]; }))
+                   .map(function(q){ return toTex(q[0], q[1], S, S); });
+  function tracePath(){
+    g.beginPath(); g.moveTo(pts[0][0], pts[0][1]);
+    for(var k=1;k<pts.length;k++){
+      var a = pts[k-1], b = pts[k];
+      g.quadraticCurveTo((a[0]+b[0])/2 + (k%2?62:-62), (a[1]+b[1])/2, b[0], b[1]);
+    }
+  }
+  g.lineCap = "round"; g.lineJoin = "round";
+  [[74,"rgba(38,30,24,.5)"],[56,"rgba(62,50,38,.8)"],[40,"rgba(80,65,50,.85)"],[26,"rgba(96,79,61,.7)"]]
+  .forEach(function(pass){
+    g.lineWidth = pass[0]; g.strokeStyle = pass[1];
+    tracePath(); g.stroke();
+  });
+
+  /* pebbles + grass blades scattered for close-up detail */
+  for(i=0;i<9000;i++){
+    x = Math.random()*S; y = Math.random()*S;
+    g.globalAlpha = .07 + Math.random()*.16;
+    g.fillStyle = Math.random() < .5 ? "#7f9c84" : "#0d1813";
+    g.fillRect(x, y, 1 + Math.random()*2, 1 + Math.random()*4);
+  }
+  g.globalAlpha = 1;
+
+  /* darken the far edges so the world fades out instead of ending */
+  var vg = g.createRadialGradient(S/2,S/2,S*0.30,S/2,S/2,S*0.62);
+  vg.addColorStop(0,"rgba(9,10,30,0)");
+  vg.addColorStop(1,"rgba(9,10,30,.92)");
+  g.fillStyle = vg; g.fillRect(0,0,S,S);
+
   var t = new THREE.CanvasTexture(c);
-  t.anisotropy = 4;
+  t.anisotropy = MOBILE ? 4 : 16;
   return t;
 }
 
@@ -463,10 +508,30 @@ var ground = new THREE.Mesh(
 );
 ground.rotation.x = -Math.PI/2;
 ground.position.set(GCX, 0, GCZ);
+ground.receiveShadow = true;
 scene.add(ground);
 
 /* ============================ sky ============================ */
 (function sky(){
+  /* gradient dome: deep indigo overhead easing to a dusty rose horizon */
+  var sc2 = document.createElement("canvas"); sc2.width = 8; sc2.height = 256;
+  var sg = sc2.getContext("2d");
+  var grad = sg.createLinearGradient(0,0,0,256);
+  grad.addColorStop(0.00, "#03040e");
+  grad.addColorStop(0.42, "#0a0820");
+  grad.addColorStop(0.72, "#191030");
+  grad.addColorStop(0.90, "#2d1636");
+  grad.addColorStop(1.00, "#3a1b35");
+  sg.fillStyle = grad; sg.fillRect(0,0,8,256);
+  var dome = new THREE.Mesh(
+    new THREE.SphereGeometry(230, 24, 18),
+    new THREE.MeshBasicMaterial({
+      map: new THREE.CanvasTexture(sc2), side: THREE.BackSide, fog: false, depthWrite: false
+    })
+  );
+  dome.position.set(0, 0, -30);
+  scene.add(dome);
+
   var n = 420, pos = new Float32Array(n*3);
   for(var i=0;i<n;i++){
     var th = Math.random()*Math.PI*2, ph = Math.random()*0.42*Math.PI, R = 230;
@@ -510,8 +575,9 @@ var M = {
   thatch:  function(){ return mat(0x4a3526); },
   wall:    function(){ return mat(0x6b523a); },
   stone:   function(){ return mat(0x4a3d50); },
-  leaf:    function(){ return mat(0x1f3826); },
-  leafHi:  function(){ return mat(0x2a4a30); },
+  leaf:    function(){ return mat(0x24402c); },
+  leafHi:  function(){ return mat(0x32573a); },
+  cane:    function(){ return mat(0x6f7f4a); },
   gold:    function(){ return mat(0xd4ad55, { emissive: 0x4e3813 }); },
   water:   function(){ return mat(0x1b2a4a, { transparent:true, opacity:.8, emissive:0x101c35 }); },
   skin:    function(){ return mat(0xc98f63); },
@@ -592,12 +658,16 @@ function makeBanyan(){
     g.add(r);
   }
   /* canopy */
-  var blobs = [[0,7.6,0,4.3],[-3,6.8,1.4,3.0],[3.1,6.9,-1.2,3.1],[.6,8.6,-2.6,2.6],[-1.4,8.3,2.6,2.5]];
+  var blobs = [[0,7.7,0,4.2],[-3.2,6.9,1.5,3.0],[3.3,7.0,-1.3,3.1],[.6,8.8,-2.7,2.6],
+               [-1.5,8.5,2.7,2.5],[-4.6,7.9,-1.8,2.2],[4.4,8.2,1.9,2.3],[0,6.2,3.6,2.1],
+               [1.8,9.5,.4,1.9],[-2.2,9.2,-.6,1.8]];
   for(i=0;i<blobs.length;i++){
     var b = blobs[i];
-    var s = new THREE.Mesh(new THREE.SphereGeometry(b[3], 9, 7), i%2 ? M.leaf() : M.leafHi());
-    s.position.set(b[0], b[1], b[2]); s.scale.y = .72;
-    g.add(s);
+    var sp = new THREE.Mesh(new THREE.SphereGeometry(b[3], 10, 8), i%3 ? M.leaf() : M.leafHi());
+    sp.position.set(b[0], b[1], b[2]);
+    sp.scale.set(1, .74, 1);
+    sp.rotation.y = Math.random()*3;
+    g.add(sp);
   }
   g.userData.lanterns = [];
   var spots = [[-2.4,5.2,1.6],[2.2,5.0,-1.4],[0,4.6,2.6]];
@@ -704,16 +774,26 @@ function scatter(){
     }
     if(near) continue;
     if(Math.random() < .55){
-      var b = new THREE.Mesh(new THREE.SphereGeometry(.6 + Math.random()*.9, 6, 5), M.leaf());
-      b.position.set(x, .35, z); b.scale.y = .62;
+      var rr = .6 + Math.random()*.9;
+      var b = new THREE.Mesh(new THREE.SphereGeometry(rr, 7, 6), Math.random()<.5 ? M.leaf() : M.leafHi());
+      b.position.set(x, rr*.52, z); b.scale.y = .62;
+      b.rotation.y = Math.random()*3;
       g.add(b);
     } else {
-      var t = new THREE.Group(), n = 3 + (Math.random()*3|0);
-      for(k=0;k<n;k++){
-        var c = new THREE.Mesh(new THREE.CylinderGeometry(.07,.09, 3 + Math.random()*2.6, 5), M.leafHi());
-        c.position.set((Math.random()-.5)*.8, 1.8, (Math.random()-.5)*.8);
-        c.rotation.z = (Math.random()-.5)*.14;
-        t.add(c);
+      var t = new THREE.Group();
+      var th = 2.3 + Math.random()*1.9;
+      var trunk = new THREE.Mesh(new THREE.CylinderGeometry(.12,.19, th, 6), M.wood());
+      trunk.position.y = th/2;
+      trunk.rotation.z = (Math.random()-.5)*.12;
+      t.add(trunk);
+      var nb = 2 + (Math.random()*2|0);
+      for(k=0;k<nb;k++){
+        var cr = .75 + Math.random()*.75;
+        var cn = new THREE.Mesh(new THREE.SphereGeometry(cr, 8, 6), k%2 ? M.leaf() : M.leafHi());
+        cn.position.set((Math.random()-.5)*.9, th + .15 + k*.55, (Math.random()-.5)*.9);
+        cn.scale.set(1, .82, 1);
+        cn.rotation.y = Math.random()*3;
+        t.add(cn);
       }
       t.position.set(x, 0, z);
       g.add(t);
@@ -779,7 +859,7 @@ function makeGirl(){
   var candle = new THREE.Group();
   var wax = new THREE.Mesh(new THREE.CylinderGeometry(.055,.065,.3,7), mat(0xf6ead6));
   wax.position.y = .15; candle.add(wax);
-  var fl = makeFlame(1.0); fl.position.y = .38; candle.add(fl);
+  var fl = makeFlame(1.45); fl.position.y = .38; candle.add(fl);
   candle.position.set(0, -.8, .12);
   armR.add(candle);
 
@@ -823,12 +903,12 @@ player.position.set(0, 0, 3);
 scene.add(player);
 var pShadow = blobShadow(2.0); scene.add(pShadow);
 
-var candleLight = new THREE.PointLight(0xffb964, 1.7, 15, 2);
+var candleLight = new THREE.PointLight(0xffb05a, 2.5, 21, 2);
 candleLight.position.set(0, 1.6, 0);
 scene.add(candleLight);
 
 /* ============================ stations ============================ */
-var hemiTarget = 0.55;
+var hemiTarget = 0.22;
 
 var houseObj  = makeHouse();   houseObj.position.set(STATION_POS[0].x, 0, STATION_POS[0].z);
 var treeObj   = makeBanyan();  treeObj.position.set(STATION_POS[1].x, 0, STATION_POS[1].z);
@@ -842,6 +922,31 @@ gintoki.position.set(STATION_POS[4].x, 0, STATION_POS[4].z - 1.4);
 gintoki.rotation.y = Math.PI;
 scene.add(gintoki);
 scene.add((function(){ var s = blobShadow(1.9); s.position.set(gintoki.position.x, .02, gintoki.position.z); return s; })());
+
+/* everything built so far casts and receives; ground + sky are corrected after */
+scene.traverse(function(o){
+  if(o.isMesh){ o.castShadow = true; o.receiveShadow = true; }
+});
+ground.castShadow = false; ground.receiveShadow = true;
+
+/* fireflies drifting over the fields */
+var FIRE = (function(){
+  var n = MOBILE ? 80 : 170, pos = new Float32Array(n*3), seeds = [];
+  for(var i=0;i<n;i++){
+    var fx = -52 + Math.random()*104, fz = -80 + Math.random()*98, fy = .5 + Math.random()*3.4;
+    pos[i*3] = fx; pos[i*3+1] = fy; pos[i*3+2] = fz;
+    seeds.push({ x:fx, y:fy, z:fz, p:Math.random()*9, s:.25 + Math.random()*.8 });
+  }
+  var geo = new THREE.BufferGeometry();
+  geo.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+  var pts = new THREE.Points(geo, new THREE.PointsMaterial({
+    map: glowTex("ff", "rgba(255,240,186,1)", "rgba(255,196,86,.45)"),
+    size: 0.38, sizeAttenuation: true, transparent: true,
+    blending: THREE.AdditiveBlending, depthWrite: false, opacity: .55
+  }));
+  scene.add(pts);
+  return { geo: geo, seeds: seeds, pts: pts };
+})();
 
 var drifters = [];
 
@@ -857,7 +962,7 @@ var STATIONS = [
       houseObj.userData.candles.forEach(function(c){
         var f = makeFlame(.95); f.position.y = .36; c.add(f);
       });
-      hemiTarget = 0.66;
+      hemiTarget = 0.28;
     }
   },
   {
@@ -869,7 +974,7 @@ var STATIONS = [
     obj: treeObj,
     light: function(){
       treeObj.userData.lanterns.forEach(lightLantern);
-      hemiTarget = 0.78;
+      hemiTarget = 0.33;
     }
   },
   {
@@ -889,7 +994,7 @@ var STATIONS = [
         scene.add(d);
         drifters.push(d);
       }
-      hemiTarget = 0.9;
+      hemiTarget = 0.39;
     }
   },
   {
@@ -907,7 +1012,7 @@ var STATIONS = [
         m.material.emissive.setHex(0x8a6a1e);
       });
       pagObj.userData.finial.material.emissive.setHex(0xbfa047);
-      hemiTarget = 1.05;
+      hemiTarget = 0.45;
     }
   },
   {
@@ -921,7 +1026,7 @@ var STATIONS = [
     light: function(){
       archObj.userData.lanterns.forEach(lightLantern);
       lightLantern(gintoki.userData.big);
-      hemiTarget = 1.3;
+      hemiTarget = 0.52;
     }
   }
 ];
@@ -943,6 +1048,16 @@ STATIONS.forEach(function(st, i){
   scene.add(beam);
   st.ring = ring; st.beam = beam; st.pos = p; st.idx = i;
 });
+
+var LAMP_Y = [3.4, 5.4, 1.1, 3.2, 4.4];
+var LAMP_I = [1.7, 1.6, 1.25, 2.3, 1.8];
+var LAMP_D = [28, 26, 22, 38, 28];
+function addStationLight(i){
+  var p = STATION_POS[i];
+  var L = new THREE.PointLight(0xffa755, LAMP_I[i], LAMP_D[i], 2);
+  L.position.set(p.x, LAMP_Y[i], p.z);
+  scene.add(L);
+}
 
 /* things the player cannot walk through */
 var BLOCKERS = [
@@ -994,6 +1109,7 @@ function syncPips(){
 STATIONS.forEach(function(st){
   if(state.found[st.key]){
     st.light();
+    addStationLight(st.idx);
     st.ring.visible = false; st.beam.visible = false;
   }
 });
@@ -1140,11 +1256,23 @@ function tick(){
   for(var f=0;f<FLAMES.length;f++){
     var fl = FLAMES[f];
     var k = 0.84 + Math.sin(t*7.3 + fl.userData.seed)*0.1 + Math.sin(t*17.1 + fl.userData.seed*2)*0.06;
-    fl.userData.halo.scale.set(1.5*k, 1.5*k, 1);
+    var bs = fl.userData.base;
+    fl.userData.halo.scale.set(bs*k, bs*k, 1);
     fl.userData.core.scale.set(1, 1.8*k, 1);
   }
-  candleLight.intensity = 1.55 + Math.sin(t*8.1)*0.14;
+  candleLight.intensity = 2.35 + Math.sin(t*8.1)*0.22;
   hemi.intensity += (hemiTarget - hemi.intensity) * Math.min(1, dt*0.8);
+
+  /* ---- fireflies ---- */
+  var fp = FIRE.geo.attributes.position;
+  for(var q=0;q<FIRE.seeds.length;q++){
+    var sd = FIRE.seeds[q];
+    fp.array[q*3]     = sd.x + Math.sin(t*sd.s*0.6 + sd.p)*2.4;
+    fp.array[q*3+1]   = sd.y + Math.sin(t*sd.s + sd.p*1.7)*0.65;
+    fp.array[q*3+2]   = sd.z + Math.cos(t*sd.s*0.5 + sd.p*0.8)*2.4;
+  }
+  fp.needsUpdate = true;
+  FIRE.pts.material.opacity = 0.34 + Math.sin(t*1.9)*0.16;
 
   /* ---- floating candles drift downstream ---- */
   for(var i=0;i<drifters.length;i++){
@@ -1322,6 +1450,7 @@ actEl.addEventListener("click", function(){
   var st = activeStation;
   state.found[st.key] = true;
   st.light();
+  addStationLight(st.idx);
   st.ring.visible = false;
   st.beam.visible = false;
   syncPips();

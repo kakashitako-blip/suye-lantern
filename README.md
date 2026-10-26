@@ -23,5 +23,11 @@ Live: https://kakashitako-blip.github.io/suye-lantern/
   a refresh cannot re-roll the amount.
 - Open with `#reset` on the URL to wipe the save and start the night over.
 
-No lights are used for the candles — they are emissive meshes plus additive sprites, with a
-single point light following Suye, so it stays smooth on a mid-range phone.
+## Rendering
+
+ACES filmic tone mapping with a shadow-casting moon (2048 map on desktop, 1024 on touch
+devices), a hemisphere fill that brightens one step per station lit, and a gradient sky dome
+so the horizon never ends in a hard edge. Candle flames are emissive meshes plus additive
+sprites rather than lights; the only moving light is the one Suye carries, and each lit
+station adds one static warm point light. Device pixel ratio is capped at 2.5 on desktop
+and 2 on phones.
