@@ -472,7 +472,7 @@ var STATION_POS = [
   { x:   7, z: -71 }    /* 5 Gintoki      */
 ];
 
-var SOLID = [], GROUNDB = [], PLANT = [], GLOWB = [];
+var SOLID = [], PLANT = [], GLOWB = [];
 function box(list, x, y, z, s, c, sy){
   list.push({ x:x, y:y, z:z, s:s, sy: sy == null ? s : sy, c:c });
 }
@@ -510,22 +510,31 @@ function distToPath(x, z){
 var RIV = { x0: 27, x1: 35, z0: -58, z1: -6 };
 function isWater(x, z){ return x >= RIV.x0 && x <= RIV.x1 && z >= RIV.z0 && z <= RIV.z1; }
 
-/* ---- ground ---- */
+/* ---- ground: one pixel per block, nearest filtered ---- */
 var FLOWER_COLS = [0xff5e7a, 0xffd34d, 0xf8f3ff, 0xff8fc4, 0xc98bff];
+var GX0 = -46, GX1 = 46, GZ0 = -80, GZ1 = 11;
+var GW = GX1-GX0+1, GH = GZ1-GZ0+1;
 (function ground(){
-  for(var x=-46; x<=46; x++){
-    for(var z=-80; z<=11; z++){
-      if(isWater(x,z)){ box(GROUNDB, x, -1.5, z, 1, vary(C.sand, 14)); continue; }
-      var near = distToPath(x, z);
-      if(near < 2.4){
-        box(GROUNDB, x, -0.5, z, 1, vary(near < 1.5 ? C.path : C.pathD, 16));
-        continue;
+  var BPX = 8;                                   /* pixels per block */
+  var c = document.createElement("canvas"); c.width = GW*BPX; c.height = GH*BPX;
+  var g = c.getContext("2d");
+  for(var x=GX0; x<=GX1; x++){
+    for(var z=GZ0; z<=GZ1; z++){
+      var col, near = distToPath(x, z);
+      if(isWater(x,z))      col = vary(C.sand, 10);
+      else if(near < 2.4)   col = vary(near < 1.5 ? C.path : C.pathD, 12);
+      else                  col = vary(Math.random() < 0.25 ? C.grassD : C.grass, 11);
+      var px = (x - GX0)*BPX, pz = (z - GZ0)*BPX;
+      g.fillStyle = "#" + ("000000" + col.toString(16)).slice(-6);
+      g.fillRect(px, pz, BPX, BPX);
+      /* speckle inside the block so it has texture rather than flat fill */
+      for(var q=0;q<9;q++){
+        var sp = vary(col, 16);
+        g.fillStyle = "#" + ("000000" + sp.toString(16)).slice(-6);
+        g.fillRect(px + ((Math.random()*BPX)|0), pz + ((Math.random()*BPX)|0), 2, 2);
       }
-      var g = Math.random() < 0.25 ? C.grassD : C.grass;
-      box(GROUNDB, x, -0.5, z, 1, vary(g, 11));
-      /* blossoms, flowers and tufts scattered over the fields */
+      if(isWater(x,z) || near < 4.2) continue;
       var r = Math.random();
-      if(near < 4.2) continue;
       if(r < 0.055){
         box(PLANT, x, 0.26, z, 0.09, C.leafD, 0.52);
         box(PLANT, x, 0.58, z, 0.24, FLOWER_COLS[(Math.random()*FLOWER_COLS.length)|0], 0.18);
@@ -535,6 +544,18 @@ var FLOWER_COLS = [0xff5e7a, 0xffd34d, 0xf8f3ff, 0xff8fc4, 0xc98bff];
       }
     }
   }
+  var tex = new THREE.CanvasTexture(c);
+  tex.magFilter = THREE.NearestFilter;
+  tex.minFilter = THREE.LinearMipMapLinearFilter;
+  tex.anisotropy = Math.min(renderer.capabilities.getMaxAnisotropy(), MOBILE ? 8 : 16);
+  var m = new THREE.Mesh(
+    new THREE.PlaneGeometry(GW, GH),
+    new THREE.MeshStandardMaterial({ map: tex, roughness:.96, metalness:0, envMapIntensity:.25 })
+  );
+  m.rotation.x = -Math.PI/2;
+  m.position.set((GX0+GX1)/2, 0, (GZ0+GZ1)/2);
+  m.receiveShadow = true;
+  scene.add(m);
 })();
 
 /* ---- blossom + green trees ---- */
@@ -581,7 +602,7 @@ function bambooClump(x, z){
 }
 (function scatterTrees(){
   var placed = [], i, k;
-  for(i=0;i<190;i++){
+  for(i=0;i< (MOBILE ? 120 : 190); i++){
     var x = Math.round(-44 + Math.random()*88);
     var z = Math.round(-78 + Math.random()*88);
     if(isWater(x,z) || distToPath(x,z) < 6.5) continue;
@@ -792,7 +813,6 @@ function buildInstanced(list, mat, cast, receive){
   scene.add(im);
   return im;
 }
-buildInstanced(GROUNDB, new THREE.MeshStandardMaterial({ roughness:.95, metalness:0, envMapIntensity:.25 }), false, true);
 buildInstanced(SOLID,   new THREE.MeshStandardMaterial({ roughness:.88, metalness:0, envMapIntensity:.25 }), true,  true);
 buildInstanced(PLANT,   new THREE.MeshStandardMaterial({ roughness:.9,  metalness:0, envMapIntensity:.25 }), false, true);
 buildInstanced(GLOWB,   new THREE.MeshStandardMaterial({ roughness:.4, emissive:0xffd98a, emissiveIntensity:1.25 }), false, false);
@@ -1136,7 +1156,7 @@ var activeStation = null;
 
 function tick(){
   requestAnimationFrame(tick);
-  var dt = Math.min(0.05, clock.getDelta());
+  var dt = Math.min(0.1, clock.getDelta());
   var t  = clock.elapsedTime;
 
   /* ---- movement ---- */
