@@ -68,21 +68,36 @@ separate saves, and clearing site data or a different device gives a fresh draw.
 - Fonts: `Noto Serif Myanmar` (display) + `Padauk` (body) from Google Fonts. Burmese needs
   generous `line-height` (1.9–2.05 body, ~1.5 headings) or diacritics clip.
 
-## The five stations
+## The route and the five stations
 
-Walk up, press the glowing button, get a story card and a hidden gift. Station 5 is locked
-until the other four are done; it triggers the prize reveal.
+The lane is an explicit waypoint list (`LANE`), a loop that starts at the village edge, goes
+out, and comes back to her door. It never runs through a building.
 
-| # | key | Place | Button | What lights up |
+| # | key | Place | Button | The action she performs |
 |---|---|---|---|---|
-| 1 | `house` | အိမ်ရှေ့ | မီးထွန်း | windowsill candles |
-| 2 | `tree` | ညောင်ပင် | ချိတ်မယ် | lanterns in the blossom tree |
-| 3 | `creek` | ချောင်းနားက ကျောက်တုံး | မျှောမယ် | candles drifting downstream |
-| 4 | `pagoda` | ဘုရား | ပူဇော်မယ် | oil lamps + the gold glows |
-| 5 | `gintoki` | နောက်ဆုံးမီးပုံး | သွားမယ် | arch lanterns, then the prize |
+| 1 | `tree` | ညောင်ပင် | ချိတ်မယ် | walks up, reaches into the branches, hangs the lanterns |
+| 2 | `creek` | ချောင်းနားက ကျောက်တုံး | မျှောမယ် | kneels at the bank, sets the candle boat down, pushes it off |
+| 3 | `pagoda` | ဘုရား | ပူဇော်မယ် | kneels, lights seven oil lamps one by one, bows |
+| 4 | `gintoki` | နောက်ဆုံးမီးပုံး | သွားမယ် | meets him, they release the big lantern into the sky |
+| 5 | `house` | အိမ် | မီးထွန်း | lights the windowsill candles, the whole village blazes, the prize rises in the sky |
 
-Ambient light steps up at each station (`hemiTarget` 0.13 → 0.78) so the village brightens
-as she plays.
+**No modal cards.** Clicking the button plays a scripted scene — she walks, kneels, reaches,
+bows — with one line of Burmese subtitle fading in at each beat. Scenes run 7-13 s.
+
+### The cutscene engine
+
+`cut(steps, done)` runs a list of steps; `updateCut(dt)` is called from the top of the loop.
+Step builders: `sSay` `sHush` `sWait` `sDo` `sWalk` `sFace` `sArm` `sKneel` `sBow` `sCam`
+`sCamOff` `sStagger`. Pose offsets are globals (`kneelAmt`, `armRaise`, `bowAmt`) that the
+animation block *adds* to the idle motion, so nothing fights for the same property.
+
+`sCam(yaw, dist, h, look)` sets `camFocus`. **Camera yaw convention:** the camera sits at
+`player + (-sin(yaw)*dist, h, -cos(yaw)*dist)`. So `yaw = π` puts it behind someone facing −Z.
+Getting this backwards puts a building between the camera and Suye, and the trunk-collision
+pull-in then yanks the shot into a steep overhead.
+
+Each station's `light()` is the complete, idempotent end state, so a reload restores a
+half-finished village correctly. `litFlame` guards with `userData.flamed`.
 
 ---
 
