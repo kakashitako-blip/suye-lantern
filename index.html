@@ -86,6 +86,16 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
   opacity:0;transition:opacity .45s ease;max-width:58%;text-align:right;
 }
 #place.show{opacity:1}
+#mute{
+  pointer-events:auto;-webkit-appearance:none;appearance:none;
+  width:34px;height:34px;flex:0 0 auto;border-radius:50%;
+  border:1px solid rgba(255,217,233,.32);
+  background:rgba(43,13,34,.55);color:var(--blush);
+  font-size:1rem;line-height:1;cursor:pointer;
+  display:grid;place-items:center;
+  transition:opacity .3s ease;
+}
+#mute.off{opacity:.4}
 
 /* ---------- joystick ---------- */
 #stick{
@@ -216,6 +226,7 @@ a{color:var(--blush)}
 <div id="hud" hidden>
   <div id="pips"></div>
   <div id="place"></div>
+  <button id="mute" type="button" aria-label="music">♪</button>
 </div>
 
 <div id="stick"><div id="knob"></div></div>
@@ -675,8 +686,8 @@ var LANTERNS = [];
 function lantern(x, y, z, size, lit){
   var g = new THREE.Group();
   var m = new THREE.MeshStandardMaterial({
-    color: 0xffb04a, roughness:.5, metalness:.1,
-    emissive: 0xff8c2a, emissiveIntensity: lit ? 1.5 : 0.05
+    color: 0xc9762c, roughness:.6, metalness:.05,
+    emissive: 0xff8c2a, emissiveIntensity: lit ? 0.55 : 0.04
   });
   var body = new THREE.Mesh(new THREE.BoxGeometry(size, size*1.25, size), m);
   g.add(body);
@@ -685,7 +696,7 @@ function lantern(x, y, z, size, lit){
     new THREE.MeshStandardMaterial({ color: 0x4e3425, roughness:.9 })
   );
   cap.position.y = size*0.72; g.add(cap);
-  var halo = makeGlow(WARM, size*3.0, lit ? .5 : 0);
+  var halo = makeGlow(WARM, size*2.2, lit ? .3 : 0);
   g.add(halo);
   g.position.set(x, y, z);
   g.userData = { body:body, halo:halo, lit:!!lit, size:size };
@@ -695,8 +706,8 @@ function lantern(x, y, z, size, lit){
 }
 function lightLantern(l){
   l.userData.lit = true;
-  l.userData.body.material.emissiveIntensity = 1.5;
-  l.userData.halo.material.opacity = .5;
+  l.userData.body.material.emissiveIntensity = 0.55;
+  l.userData.halo.material.opacity = .3;
 }
 
 /* ---- the five places ---- */
@@ -999,10 +1010,12 @@ var STATIONS = [
     light: function(){ spawnDrifters(); hemiTarget = 0.30; } },
   { key:"pagoda",  name:"\u1018\u102F\u101B\u102C\u1038",
     light: function(){ pagLamps.forEach(litFlame(1.1, 0.24)); hemiTarget = 0.40; } },
-  { key:"gintoki", name:"\u1014\u1031\u102C\u1000\u103A\u1006\u102F\u1036\u1038\u1019\u102E\u1038\u1015\u102F\u1036\u1038",
-    light: function(){ archLanterns.forEach(lightLantern); lightLantern(gintokiLantern); hemiTarget = 0.50; } },
-  { key:"house",   name:"\u1021\u102D\u1019\u103A", locked: true,
-    light: function(){ houseCandles.forEach(litFlame(1.15, 0.42)); villageAblaze(); } }
+  { key:"gintoki", name:"Gintoki", locked: true,
+    light: function(){
+      archLanterns.forEach(lightLantern);
+      lightLantern(gintokiLantern);
+      villageAblaze();
+    } }
 ];
 
 /* ============================ scripted actions ============================ */
@@ -1068,6 +1081,34 @@ function sStagger(list, d, fn){
                         while(n < want && n < list.length){ fn(list[n]); n++; } },
     end:function(){ while(n < list.length){ fn(list[n]); n++; } } };
 }
+function heartBurst(pos, n){
+  for(var i=0;i<(n||16);i++){
+    var sp = makeGlow(PINK, 0.45 + Math.random()*0.45, 0.95);
+    sp.position.copy(pos);
+    sp.position.x += (Math.random()-.5)*0.9;
+    sp.position.z += (Math.random()-.5)*0.9;
+    scene.add(sp);
+    (function(o, vy, vx, vz){
+      var t0 = performance.now();
+      (function fly(now){
+        var k = Math.min(1, (now - t0)/1900);
+        o.position.y += vy*0.016; o.position.x += vx*0.016; o.position.z += vz*0.016;
+        o.material.opacity = 0.95*(1-k);
+        if(k < 1) requestAnimationFrame(fly); else scene.remove(o);
+      })(t0);
+    })(sp, 0.9 + Math.random()*1.3, (Math.random()-.5)*1.0, (Math.random()-.5)*1.0);
+  }
+}
+function presentBox(){
+  var g = new THREE.Group();
+  g.add(px(.5,.42,.5, 0xd93b63));
+  var lid = px(.58,.14,.58, 0xf26a92); lid.position.y = .28; g.add(lid);
+  g.add(px(.11,.44,.52, 0xffd96b));
+  g.add(px(.52,.44,.11, 0xffd96b));
+  var bow = px(.2,.16,.2, 0xffd96b); bow.position.y = .36; g.add(bow);
+  g.userData.lid = lid; g.userData.bow = bow;
+  return g;
+}
 function litFlame(size, y){
   return function(g){
     if(g.userData.flamed) return;
@@ -1086,6 +1127,7 @@ function spawnDrifters(){
   }
 }
 function villageAblaze(){
+  houseCandles.forEach(litFlame(1.15, 0.42));
   laneLamps.forEach(lightLantern);
   LANTERNS.forEach(function(l){ if(!l.userData.lit) lightLantern(l); });
   hemiTarget = 1.15;
@@ -1093,141 +1135,194 @@ function villageAblaze(){
   renderer.toneMappingExposure = 0.78;
 }
 
-/* ============================ the five sequences ============================ */
+/* ============================ the four sequences ============================ */
 function seqTree(fin){
   return [
     sSay("\u100A\u1031\u102C\u1004\u103A\u1015\u1004\u103A\u1000\u103C\u102E\u1038\u1021\u1031\u102C\u1000\u103A \u101B\u1031\u102C\u1000\u103A\u101C\u102C\u1015\u103C\u102E"),
     sWalk(TREE.x + 2.8, TREE.z + 2.8, 1.7),
     sFace(TREE.x, TREE.z),
-    sCam(Math.atan2(2.8, 2.8) + 0.9, 5.0, 2.8),
+    sCam(Math.PI - 0.6, 5.4, 2.9, 1.9),
     sWait(0.4),
-    sSay("\u1019\u102E\u1038\u1015\u102F\u1036\u1038\u101C\u1031\u1038\u1000\u102D\u102F \u1021\u1000\u102D\u102F\u1004\u103A\u1038\u1019\u103E\u102C \u1001\u103B\u102D\u1010\u103A\u1006\u103D\u1032\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
-    sArm(-1.5, 0.9),
-    sStagger(treeLanterns, 1.1, lightLantern),
+    sSay("\u1019\u102E\u1038\u1015\u102F\u1036\u1038\u1010\u103D\u1031\u1000\u102D\u102F \u1021\u1000\u102D\u102F\u1004\u103A\u1038\u1019\u103E\u102C \u1010\u1005\u103A\u101C\u102F\u1036\u1038\u1001\u103B\u1004\u103A\u1038 \u1001\u103B\u102D\u1010\u103A\u1010\u101A\u103A"),
+    sArm(-1.5, 0.8), sDo(function(){ lightLantern(treeLanterns[0]); }), sWait(0.4), sArm(-0.4, 0.5),
+    sArm(-1.6, 0.7), sDo(function(){ lightLantern(treeLanterns[1]); }), sWait(0.4), sArm(-0.4, 0.5),
+    sArm(-1.4, 0.7), sDo(function(){ lightLantern(treeLanterns[2]); }), sWait(0.5), sArm(0, 0.6),
     sDo(fin),
     sWait(0.9),
-    sArm(0, 0.7),
     sHush(), sCamOff(), sWait(0.5)
   ];
 }
-function seqCreek(fin){
-  var boat = null;
+
+/* she sets each little boat down herself, four times */
+function boatLaunch(){
+  var boat = null, sx = 0;
   return [
-    sSay("\u101B\u1031\u1005\u1015\u103A\u1014\u102C\u1038\u1019\u103E\u102C \u1011\u102D\u102F\u1004\u103A\u1001\u103B\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
-    sWalk(RIV.x0 - 1.4, -30, 1.8),
-    sFace(RIV.x0 + 6, -30),
-    sCam(-1.25, 4.6, 2.4),
-    sKneel(0.38, 0.7),
-    sSay("\u1016\u101A\u1031\u102C\u1004\u103A\u1038\u1010\u102D\u102F\u1004\u103A\u101C\u103E\u1031\u101C\u1031\u1038\u1000\u102D\u102F \u101B\u1031\u1011\u1032 \u1019\u103B\u103E\u1031\u102C\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
+    sArm(-0.6, 0.45),
     sDo(function(){
+      sx = player.position.x;
       boat = new THREE.Group();
       boat.add(px(.7,.12,.7, 0x3f7a2d));
       var f = makeFlame(1.0); f.position.y = .2; boat.add(f);
-      boat.position.set(player.position.x + 0.6, 0.75, player.position.z);
+      boat.position.set(sx + 0.55, 0.8, player.position.z);
       scene.add(boat);
     }),
-    sArm(-0.55, 0.5),
-    { dur: 1.2, update: function(p){
+    { dur: 1.1, update: function(p){
         var e = ease(p);
-        boat.position.x = (player.position.x + 0.6) + (RIV.x0 + 2.2 - player.position.x - 0.6)*e;
-        boat.position.y = 0.75 - 0.85*e;
+        boat.position.x = (sx + 0.55) + (RIV.x0 + 2.1 - sx - 0.55)*e;
+        boat.position.y = 0.8 - 0.92*e;
       } },
-    sDo(function(){ drifters.push(boat); fin(); }),
-    sArm(0, 0.5),
-    sKneel(0, 0.6),
-    sDo(function(){
-      for(var i=0;i<4;i++){
-        var d = new THREE.Group();
-        d.add(px(.7,.1,.7, 0x3f7a2d));
-        var f = makeFlame(1.0); f.position.y = .22; d.add(f);
-        d.position.set(RIV.x0 + 1.5 + Math.random()*(RIV.x1-RIV.x0-3), -0.1, -44 - i*6);
-        scene.add(d); drifters.push(d);
-      }
-    }),
-    sWait(1.6),
-    sHush(), sCamOff(), sWait(0.4)
+    sDo(function(){ drifters.push(boat); }),
+    sArm(0, 0.4),
+    sWait(0.45)
   ];
 }
-function seqPagoda(fin){
-  return [
-    sSay("\u1018\u102F\u101B\u102C\u1038\u101B\u1004\u103A\u1015\u103C\u1004\u103A\u1000\u102D\u102F \u1010\u1000\u103A\u101C\u102C\u1015\u103C\u102E"),
-    sWalk(PAG.x, PAG.z + 8.6, 2.0),
-    sFace(PAG.x, PAG.z),
-    sCam(0.55, 6.2, 3.2),
+function seqCreek(fin){
+  var steps = [
+    sSay("\u101B\u1031\u1005\u1015\u103A\u1014\u102C\u1038\u1019\u103E\u102C \u1011\u102D\u102F\u1004\u103A\u1001\u103B\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
+    sWalk(RIV.x0 - 1.4, -34, 1.8),
+    sFace(RIV.x0 + 6, -34),
+    sCam(-1.25, 5.0, 2.5, 1.5),
     sKneel(0.38, 0.7),
-    sSay("\u1006\u102E\u1019\u102E\u1038\u1010\u103D\u1031\u1000\u102D\u102F \u1010\u1005\u103A\u1001\u102F\u1001\u103B\u1004\u103A\u1038 \u1015\u1030\u1007\u1031\u102C\u103A\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
-    sArm(-0.75, 0.5),
-    sStagger(pagLamps, 2.4, litFlame(1.1, 0.24)),
+    sSay("\u1016\u101A\u1031\u102C\u1004\u103A\u1038\u1010\u102D\u102F\u1004\u103A\u101C\u103E\u1031\u101C\u1031\u1038\u1010\u103D\u1031\u1000\u102D\u102F \u1010\u1005\u103A\u1005\u102E\u1038\u1001\u103B\u1004\u103A\u1038 \u1019\u103B\u103E\u1031\u102C\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A")
+  ];
+  for(var i=0;i<4;i++){
+    steps = steps.concat(boatLaunch());
+    if(i < 3) steps.push(sWalk(RIV.x0 - 1.4, -34 + (i+1)*2.4, 0.8));
+  }
+  return steps.concat([
     sDo(fin),
-    sArm(0, 0.4),
+    sKneel(0, 0.6),
+    sWait(1.5),
+    sHush(), sCamOff(), sWait(0.4)
+  ]);
+}
+
+/* five oil lamps, lit one at a time, with a step between each */
+function seqPagoda(fin){
+  var steps = [
+    sSay("\u1018\u102F\u101B\u102C\u1038\u101B\u1004\u103A\u1015\u103C\u1004\u103A\u1000\u102D\u102F \u1010\u1000\u103A\u101C\u102C\u1015\u103C\u102E"),
+    sWalk(PAG.x - 4, PAG.z + 8.4, 2.0),
+    sFace(PAG.x - 4, PAG.z),
+    sCam(Math.PI - 0.45, 7.0, 3.1, 1.9),
+    sSay("\u1006\u102E\u1019\u102E\u1038\u1010\u103D\u1031\u1000\u102D\u102F \u1010\u1005\u103A\u1001\u102F\u1001\u103B\u1004\u103A\u1038 \u1015\u1030\u1007\u1031\u102C\u103A\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A")
+  ];
+  for(var i=0;i<5;i++){
+    (function(k){
+      if(k > 0) steps.push(sWalk(PAG.x - 4 + k*2, PAG.z + 8.4, 0.75));
+      steps.push(sFace(PAG.x - 4 + k*2, PAG.z));
+      steps.push(sArm(-0.85, 0.42));
+      steps.push(sDo(function(){ if(pagLamps[k]) litFlame(1.1, 0.24)(pagLamps[k]); }));
+      steps.push(sWait(0.32));
+      steps.push(sArm(-0.1, 0.34));
+    })(i);
+  }
+  return steps.concat([
+    sDo(fin),
+    sWalk(PAG.x, PAG.z + 8.6, 0.9),
+    sFace(PAG.x, PAG.z),
     sSay("\u1026\u1038\u1001\u103B\u1000\u1014\u103A\u1010\u1031\u102C\u1037\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
-    sBow(0.42, 0.7), sWait(1.1), sBow(0, 0.6),
+    sKneel(0.38, 0.7),
+    sBow(0.42, 0.7), sWait(1.2), sBow(0, 0.6),
     sKneel(0, 0.6),
     sHush(), sCamOff(), sWait(0.5)
-  ];
+  ]);
 }
-function seqGintoki(fin){
-  var big = null;
+
+/* the ending: the lantern, the kiss, the village, and the box */
+function seqFinale(prize, fin){
+  var big = null, box = null, hx = 0, hz = 0;
   return [
     sSay("Gintoki \u1000 \u1019\u102E\u1038\u1015\u102F\u1036\u1038\u1000\u103C\u102E\u1038\u1014\u1032\u1037 \u1005\u1031\u102C\u1004\u103A\u1037\u1014\u1031\u1010\u101A\u103A"),
-    sWalk(ARCH.x, ARCH.z + 2.6, 2.0),
+    sWalk(ARCH.x, ARCH.z + 2.8, 2.0),
     sFace(gintoki.position.x, gintoki.position.z),
-    sCam(-1.45, 7.2, 3.0),
+    sCam(-1.45, 7.2, 3.0, 1.8),
     sStagger(archLanterns, 1.2, lightLantern),
-    sDo(fin),
     sWait(0.5),
     sSay("\u1014\u103E\u1005\u103A\u101A\u1031\u102C\u1000\u103A\u101E\u102C\u1038 \u1019\u102E\u1038\u1015\u102F\u1036\u1038\u1000\u102D\u102F \u101C\u1031\u1011\u1032 \u101C\u103D\u103E\u1010\u103A\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
     { dur:0.8, update:function(p){
         gintoki.userData.armR.rotation.x = -0.5 - 1.3*ease(p);
-        armRaise = -1.1*ease(p);
-      } },
+        armRaise = -1.1*ease(p); } },
     sDo(function(){ lightLantern(gintokiLantern); }),
-    sWait(0.6),
+    sWait(0.5),
     sDo(function(){
       big = gintokiLantern;
       var wp = new THREE.Vector3(); big.getWorldPosition(wp);
       scene.add(big); big.position.copy(wp);
     }),
-    sCam(-1.45, 9.5, 4.6, 7.5),
-    { dur:3.0, update:function(p){
+    sCam(-1.45, 9.5, 4.6, 7.0),
+    { dur:2.6, update:function(p){
         var e = ease(p);
-        big.position.y = 1.0 + 16*e;
-        big.position.x += 0.004;
-        big.userData.halo.material.opacity = 0.5*(1-e*0.55);
-      } },
-    { dur:0.9, update:function(p){
+        big.position.y = 1.0 + 15*e;
+        big.userData.halo.material.opacity = 0.5*(1 - e*0.5); } },
+    { dur:0.8, update:function(p){
         gintoki.userData.armR.rotation.x = -1.8 + 1.3*ease(p);
-        armRaise = -1.1*(1-ease(p));
-      } },
-    sHush(), sCamOff(), sWait(0.5)
-  ];
-}
-function seqHouse(prize, fin){
-  return [
-    sSay("\u1021\u102D\u1019\u103A\u1015\u103C\u1014\u103A\u101B\u1031\u102C\u1000\u103A\u1015\u103C\u102E"),
-    sWalk(HOUSE.x, HOUSE.z + 5.4, 2.1),
-    sFace(HOUSE.x, HOUSE.z),
-    sCam(Math.PI - 0.55, 5.2, 2.7),
-    sSay("\u1015\u103C\u1010\u1004\u103A\u1038\u1015\u1031\u102B\u1000\u103A\u1019\u103E\u102C \u1016\u101A\u1031\u102C\u1004\u103A\u1038\u1010\u102D\u102F\u1004\u103A\u1010\u103D\u1031 \u1011\u103D\u1014\u103A\u1038\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
-    sArm(-1.25, 0.7),
-    sStagger(houseCandles, 1.5, litFlame(1.15, 0.42)),
-    sArm(0, 0.6),
-    sSay("\u101B\u103D\u102C\u1010\u1005\u103A\u101B\u103D\u102C\u101C\u102F\u1036\u1038 \u101C\u1004\u103A\u1038\u101E\u103D\u102C\u1038\u1015\u103C\u102E"),
-    sCam(Math.PI, 12, 6.8, 3.2),
-    sStagger(laneLamps, 2.6, lightLantern),
+        armRaise = -1.1*(1 - ease(p)); } },
+
+    /* the kiss */
+    sSay("Gintoki \u1000\u102D\u102F \u1021\u102C\u1018\u103D\u102C\u1038\u1015\u1031\u1038\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A \uD83D\uDC97"),
+    sCam(-1.55, 3.4, 2.0, 1.65),
+    sWalk(gintoki.position.x - 0.05, gintoki.position.z + 1.0, 1.1),
+    { dur:0.7, update:function(p){
+        var e = ease(p);
+        bowAmt = 0.3*e;
+        gintoki.userData.body.rotation.x = 0.26*e; } },
     sDo(function(){
-      villageAblaze();
-      fin();
+      heartBurst(new THREE.Vector3(player.position.x, 1.85, player.position.z - 0.5), 18);
+      chime([[659,0],[784,0.1],[988,0.22],[1175,0.36]]);
     }),
-    sWait(1.6),
+    sWait(1.5),
+    { dur:0.6, update:function(p){
+        var e = ease(p);
+        bowAmt = 0.3*(1-e);
+        gintoki.userData.body.rotation.x = 0.26*(1-e); } },
+
+    /* the village */
+    sSay("\u101B\u103D\u102C\u1010\u1005\u103A\u101B\u103D\u102C\u101C\u102F\u1036\u1038 \u101C\u1004\u103A\u1038\u101E\u103D\u102C\u1038\u1015\u103C\u102E"),
+    sCam(Math.PI - 1.15, 13, 7.0, 3.0),
+    sStagger(laneLamps, 2.6, lightLantern),
+    sDo(function(){ villageAblaze(); fin(); }),
+    sWait(1.5),
+
+    /* the present */
+    sSay("Gintoki \u1000 \u101C\u1000\u103A\u1006\u1031\u102C\u1004\u103A\u1010\u1005\u103A\u1001\u102F \u1015\u1031\u1038\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
+    sCam(-1.55, 3.8, 2.1, 1.6),
+    sDo(function(){
+      box = presentBox();
+      hx = gintoki.position.x; hz = gintoki.position.z;
+      box.position.set(hx, 1.25, hz + 0.45);
+      scene.add(box);
+    }),
+    { dur:1.1, update:function(p){
+        var e = ease(p);
+        box.position.x = hx + (player.position.x - hx)*e;
+        box.position.z = (hz + 0.45) + ((player.position.z - 0.45) - hz - 0.45)*e;
+        box.position.y = 1.25 + Math.sin(p*Math.PI)*0.25;
+        box.rotation.y = e*1.2; } },
+    sWait(0.7),
+
+    /* she opens it */
+    sSay("\u1016\u103D\u1004\u103A\u1037\u1000\u103C\u100A\u103A\u1037\u101C\u102D\u102F\u1000\u103A\u1010\u1031\u102C\u1037..."),
+    sArm(-0.9, 0.5),
+    { dur:1.0, update:function(p){
+        var e = ease(p);
+        box.userData.lid.position.y = 0.28 + 1.5*e;
+        box.userData.lid.rotation.z = e*2.4;
+        box.userData.bow.position.y = 0.36 + 1.5*e; } },
+    sDo(function(){
+      heartBurst(new THREE.Vector3(box.position.x, box.position.y + 0.6, box.position.z), 22);
+      chime(PRIZE_CHIME);
+    }),
+    sArm(0, 0.4),
+    sWait(0.6),
     sHush(),
     sDo(function(){ skyPrize(prize); }),
+    sCam(Math.PI - 1.15, 11, 6.2, 2.9),
     sWait(3.2)
   ];
 }
 
-var ACT_LABEL = ["ချိတ်မယ်","မျှောမယ်","ပူဇော်မယ်","သွားမယ်","မီးထွန်း"];
-var ACT_R     = [7.5, 7, 11, 7, 8];
+var ACT_LABEL = ["ချိတ်မယ်","မျှောမယ်","ပူဇော်မယ်","အာဘွားပေးမယ်"];
+var ACT_R     = [7.5, 8, 11, 7];
 
 /* beacon above each unfound station so she can find it in the dark */
 STATIONS.forEach(function(st, i){
@@ -1244,14 +1339,66 @@ STATIONS.forEach(function(st, i){
   st.ring = ring; st.beam = beam; st.pos = p; st.idx = i;
 });
 
-var LAMP_Y = [3.4, 5.4, 1.1, 3.2, 4.4];
-var LAMP_I = [1.0, 0.95, 0.8, 1.4, 1.1];
-var LAMP_D = [28, 26, 22, 38, 28];
+var LAMP_Y = [5.4, 1.1, 3.2, 4.4];
+var LAMP_I = [0.95, 0.8, 1.4, 1.1];
+var LAMP_D = [26, 22, 38, 28];
 function addStationLight(i){
   var p = STATION_POS[i];
   var L = new THREE.PointLight(0xffa755, LAMP_I[i], LAMP_D[i], 2);
   L.position.set(p.x, LAMP_Y[i], p.z);
   scene.add(L);
+}
+
+/* densely sampled lane, so arrows can follow the road rather than cut across it */
+var LANE_PTS = (function(){
+  var out = [];
+  for(var i=1;i<LANE.length;i++){
+    var a = LANE[i-1], b = LANE[i];
+    var dx = b[0]-a[0], dz = b[1]-a[1], L = Math.hypot(dx,dz);
+    var n = Math.max(1, Math.round(L));
+    for(var k=0;k<n;k++) out.push({ x:a[0]+dx*(k/n), z:a[1]+dz*(k/n), a:Math.atan2(dx,dz) });
+  }
+  return out;
+})();
+function nearestPt(x, z){
+  var best = 0, bd = 1e9;
+  for(var i=0;i<LANE_PTS.length;i++){
+    var d = (LANE_PTS[i].x-x)*(LANE_PTS[i].x-x) + (LANE_PTS[i].z-z)*(LANE_PTS[i].z-z);
+    if(d < bd){ bd = d; best = i; }
+  }
+  return best;
+}
+var STATION_PT = STATION_POS.map(function(sp){ return nearestPt(sp.x, sp.z); });
+
+var ARROWS = (function(){
+  var geo = new THREE.ConeGeometry(0.4, 1.0, 4);
+  geo.rotateX(Math.PI/2);
+  var a = [];
+  for(var i=0;i<8;i++){
+    var m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
+      color: 0xffd9a0, transparent:true, opacity:0, depthWrite:false
+    }));
+    m.visible = false; scene.add(m); a.push(m);
+  }
+  return a;
+})();
+var arrowTimer = 0;
+function refreshArrows(target){
+  var i;
+  for(i=0;i<ARROWS.length;i++) ARROWS[i].visible = false;
+  if(!target) return;
+  var N = LANE_PTS.length;
+  var ti = STATION_PT[target.st.idx];
+  var pi = nearestPt(player.position.x, player.position.z);
+  var fwd = (ti - pi + N) % N;
+  if(fwd < 5) return;
+  var count = Math.min(ARROWS.length, Math.floor(fwd/4));
+  for(i=0;i<count;i++){
+    var q = LANE_PTS[(pi + 4 + i*4) % N];
+    ARROWS[i].position.set(q.x, 0.45, q.z);
+    ARROWS[i].rotation.y = q.a;
+    ARROWS[i].visible = true;
+  }
 }
 
 /* things the player cannot walk through */
@@ -1479,6 +1626,18 @@ function tick(){
     if(d.position.z > rockObj.position.z + 20) d.position.z = rockObj.position.z - 22;
   }
 
+  /* ---- the way to the next stop ---- */
+  if(paused || CUT){
+    for(var ai=0; ai<ARROWS.length; ai++) ARROWS[ai].visible = false;
+  } else {
+    arrowTimer -= dt;
+    if(arrowTimer <= 0){ arrowTimer = 0.3; refreshArrows(nearestStation()); }
+    for(var aj=0; aj<ARROWS.length; aj++){
+      if(ARROWS[aj].visible)
+        ARROWS[aj].material.opacity = 0.18 + 0.5*Math.max(0, Math.sin(t*2.4 - aj*0.75));
+    }
+  }
+
   /* ---- beacons ---- */
   var pulse = 0.4 + Math.sin(t*2.2)*0.18;
   for(var s2=0;s2<STATIONS.length;s2++){
@@ -1499,7 +1658,7 @@ function tick(){
     } else {
       placeEl.classList.remove("show");
     }
-    var canAct = near && near.d < ACT_R[near.st.idx] && (!near.st.locked || done >= 4);
+    var canAct = near && near.d < ACT_R[near.st.idx] && (!near.st.locked || done >= 3);
     if(canAct){
       if(activeStation !== near.st){
         activeStation = near.st;
@@ -1508,8 +1667,8 @@ function tick(){
       }
     } else {
       if(activeStation){ activeStation = null; actEl.classList.remove("show"); }
-      if(near && near.st.locked && near.d < 9 && done < 4){
-        hintEl.textContent = "အရင် နေရာ ၆ ခုမှာ မီထွန်းပါဦး";
+      if(near && near.st.locked && near.d < 9 && done < 3){
+        hintEl.textContent = "အရင် နေရာ ၃ ခုမှာ မီထွန်းပါဦး";
         hintEl.classList.add("show");
       } else if(hintEl.textContent.indexOf("အရင်") === 0){
         hintEl.classList.remove("show");
@@ -1551,15 +1710,25 @@ addEventListener("resize", function(){
 });
 
 /* ============================ sound ============================ */
-function chime(notes){
+var _ac = null;
+function audio(){
+  if(_ac) return _ac;
   try{
     var AC = window.AudioContext || window.webkitAudioContext;
-    if(!AC) return;
-    var ac = new AC();
-    notes.forEach(function(p){
+    if(!AC) return null;
+    _ac = new AC();
+  }catch(e){ _ac = null; }
+  return _ac;
+}
+function chime(notes){
+  var ac = audio();
+  if(!ac) return;
+  try{
+    if(ac.state === "suspended") ac.resume();
+    notes.forEach(function(pair){
       var o = ac.createOscillator(), g = ac.createGain();
-      o.type = "sine"; o.frequency.value = p[0];
-      var tt = ac.currentTime + p[1];
+      o.type = "sine"; o.frequency.value = pair[0];
+      var tt = ac.currentTime + pair[1];
       g.gain.setValueAtTime(0, tt);
       g.gain.linearRampToValueAtTime(0.09, tt + 0.02);
       g.gain.exponentialRampToValueAtTime(0.0001, tt + 1.4);
@@ -1568,6 +1737,58 @@ function chime(notes){
     });
   }catch(e){}
 }
+
+/* a slow pentatonic drift, generated rather than downloaded */
+var MUSIC = (function(){
+  var master = null, timer = null, on = true;
+  var SCALE = [261.63, 293.66, 349.23, 392.00, 440.00];
+  function note(ac, freq, when, dur, gain){
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, when);
+    g.gain.linearRampToValueAtTime(gain, when + 0.08);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+    o.connect(g); g.connect(master);
+    o.start(when); o.stop(when + dur + 0.1);
+  }
+  function step(){
+    var ac = audio(); if(!ac || !master) return;
+    var now = ac.currentTime;
+    note(ac, SCALE[(Math.random()*5)|0] * (Math.random() < 0.3 ? 2 : 1),
+         now + 0.02, 2.8 + Math.random()*1.8, 0.055);
+    if(Math.random() < 0.45){
+      note(ac, SCALE[(Math.random()*5)|0] * 2,
+           now + 0.55 + Math.random()*0.7, 2.4, 0.03);
+    }
+  }
+  return {
+    start: function(){
+      var ac = audio();
+      if(!ac || master) return;
+      try{
+        if(ac.state === "suspended") ac.resume();
+        master = ac.createGain();
+        master.gain.value = on ? 0.5 : 0;
+        master.connect(ac.destination);
+        var d = ac.createOscillator(), dg = ac.createGain();
+        d.type = "sine"; d.frequency.value = 65.41;
+        dg.gain.value = 0.05; d.connect(dg); dg.connect(master); d.start();
+        var d2 = ac.createOscillator(), dg2 = ac.createGain();
+        d2.type = "triangle"; d2.frequency.value = 98.0;
+        dg2.gain.value = 0.022; d2.connect(dg2); dg2.connect(master); d2.start();
+        step();
+        timer = setInterval(step, 2400);
+      }catch(e){}
+    },
+    toggle: function(){
+      on = !on;
+      var ac = audio();
+      if(master && ac) master.gain.linearRampToValueAtTime(on ? 0.5 : 0, ac.currentTime + 0.3);
+      return on;
+    }
+  };
+})();
+
 var FIND_CHIME  = [[784,0],[1046.5,0.12]];
 var PRIZE_CHIME = [[784,0],[1046.5,0.14],[1318.5,0.3],[1568,0.46]];
 
@@ -1664,7 +1885,7 @@ $("copyBtn").addEventListener("click", function(){
 });
 
 /* ============================ action button ============================ */
-var SEQ_FOR = { tree: seqTree, creek: seqCreek, pagoda: seqPagoda, gintoki: seqGintoki };
+var SEQ_FOR = { tree: seqTree, creek: seqCreek, pagoda: seqPagoda };
 
 actEl.addEventListener("click", function(){
   if(!activeStation || paused || CUT) return;
@@ -1687,7 +1908,7 @@ actEl.addEventListener("click", function(){
   if(st.locked){
     if(!state.amount) state.amount = drawPrize();
     save();
-    cut(seqHouse(state.amount, settleStation), function(){
+    cut(seqFinale(state.amount, settleStation), function(){
       chime(PRIZE_CHIME);
       showPrize();
     });
@@ -1708,7 +1929,7 @@ composer.render();
 
 $("boot").hidden = true;
 var introEl = $("intro");
-var replay = countFound() >= 5 && state.amount > 0;
+var replay = countFound() >= 4 && state.amount > 0;
 if(replay){
   introEl.querySelector("h1").textContent = "ရွာလေး လင်းနေပြီ";
   introEl.querySelectorAll("p")[1].textContent = "နင် ဒီခရီးကို ပြီးခဲ့ပြီးပြီ။ လက်ဆောင်ကို ပြန်ကြည့်လို့ရတယ်။";
@@ -1717,12 +1938,18 @@ if(replay){
 }
 introEl.hidden = false;
 
+$("mute").addEventListener("click", function(e){
+  e.stopPropagation();
+  this.classList.toggle("off", !MUSIC.toggle());
+});
+
 $("go").addEventListener("click", function(){
   introEl.classList.add("fading");
   setTimeout(function(){ introEl.hidden = true; }, REDUCED ? 0 : 620);
   $("hud").hidden = false;
   actEl.hidden = false;
   paused = false;
+  MUSIC.start();
   if(replay){ showPrize(false); }
   else {
     hintEl.textContent = "ဘယ်ဘက်မှာ လက်မနဲ့ ဆွဲပြီး လမ်းလျှောက်ပါ";
