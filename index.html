@@ -686,8 +686,8 @@ var LANTERNS = [];
 function lantern(x, y, z, size, lit){
   var g = new THREE.Group();
   var m = new THREE.MeshStandardMaterial({
-    color: 0xffb04a, roughness:.5, metalness:.1,
-    emissive: 0xff8c2a, emissiveIntensity: lit ? 1.5 : 0.05
+    color: 0xc9762c, roughness:.6, metalness:.05,
+    emissive: 0xff8c2a, emissiveIntensity: lit ? 0.55 : 0.04
   });
   var body = new THREE.Mesh(new THREE.BoxGeometry(size, size*1.25, size), m);
   g.add(body);
@@ -696,7 +696,7 @@ function lantern(x, y, z, size, lit){
     new THREE.MeshStandardMaterial({ color: 0x4e3425, roughness:.9 })
   );
   cap.position.y = size*0.72; g.add(cap);
-  var halo = makeGlow(WARM, size*3.0, lit ? .5 : 0);
+  var halo = makeGlow(WARM, size*2.2, lit ? .3 : 0);
   g.add(halo);
   g.position.set(x, y, z);
   g.userData = { body:body, halo:halo, lit:!!lit, size:size };
@@ -706,8 +706,8 @@ function lantern(x, y, z, size, lit){
 }
 function lightLantern(l){
   l.userData.lit = true;
-  l.userData.body.material.emissiveIntensity = 1.5;
-  l.userData.halo.material.opacity = .5;
+  l.userData.body.material.emissiveIntensity = 0.55;
+  l.userData.halo.material.opacity = .3;
 }
 
 /* ---- the five places ---- */
@@ -1278,7 +1278,7 @@ function seqFinale(prize, fin){
 
     /* the village */
     sSay("\u101B\u103D\u102C\u1010\u1005\u103A\u101B\u103D\u102C\u101C\u102F\u1036\u1038 \u101C\u1004\u103A\u1038\u101E\u103D\u102C\u1038\u1015\u103C\u102E"),
-    sCam(Math.PI - 0.5, 13, 7.0, 3.0),
+    sCam(Math.PI - 1.15, 13, 7.0, 3.0),
     sStagger(laneLamps, 2.6, lightLantern),
     sDo(function(){ villageAblaze(); fin(); }),
     sWait(1.5),
@@ -1316,7 +1316,7 @@ function seqFinale(prize, fin){
     sWait(0.6),
     sHush(),
     sDo(function(){ skyPrize(prize); }),
-    sCam(Math.PI - 0.5, 12, 6.8, 3.2),
+    sCam(Math.PI - 1.15, 11, 6.2, 2.9),
     sWait(3.2)
   ];
 }
