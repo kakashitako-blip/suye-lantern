@@ -92,6 +92,12 @@ the whole pool, and the same panel becomes the result — her number big, then e
 listed with hers highlighted, so she can see what she missed. The pool is stored, so a reload
 shows the same five rather than re-rolling. There is no number in the sky; that was removed.
 
+**A village dog leads the way** instead of arrow markers (which were removed). It trots ahead
+along `LANE_PTS` toward the next stop, and when it arrives before she does it turns round and
+waits, tail wagging. During a cutscene it parks perpendicular to the camera axis — the first
+version targeted "beside her", which is exactly where the close-up camera sits, so it filled
+the frame.
+
 **Camera colliders use canopy width, not trunk width.** A sakura canopy is 3-4 blocks across
 while the trunk is one, so trunk-sized colliders let trees hide her completely — it happened
 at the pagoda. Trees push `r: 2.1-3.4`, and the pagoda keeps a 22-block tree exclusion.
