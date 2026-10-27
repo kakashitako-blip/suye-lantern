@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#140718">
 <title>Suye ရဲ့ မီးပုံးခရီး</title>
-<meta name="description" content="သီတင်းကျွတ်ည — ရွာထဲက မီးတွေ ထွန်းပြီး လက်ဆောင်ရှာရမယ်။">
+<meta name="description" content="သီတင်းကျွတ်ည — ရွာထဲက မီးတွေ ထွန်းပြီး မုန့်ဖိုးရှာရမယ်။">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Suye ရဲ့ မီးပုံးခရီး 🏮">
 <meta property="og:description" content="သီတင်းကျွတ်ည။ ရွာတစ်ရွာလုံး မှောင်နေတယ်။ ဖယောင်းတိုင်တစ်တိုင်နဲ့ စလိုက်။">
@@ -187,6 +187,39 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 .sheet p.sub{color:var(--muted);font-size:.95rem}
 .nm{font-family:var(--f-body);font-weight:700;letter-spacing:.015em}
 .sheet .btn{align-self:center;margin-top:4px}
+.pkgrid{display:grid;grid-template-columns:repeat(5,1fr);gap:clamp(4px,1.8vw,10px);width:100%;margin-top:6px}
+@keyframes pkbob{0%,100%{transform:translateY(-4px)}50%{transform:translateY(5px)}}
+.pk{
+  -webkit-appearance:none;appearance:none;border:0;background:none;padding:0;margin:0;
+  aspect-ratio:3/4;min-width:0;display:grid;place-items:center;position:relative;
+  cursor:pointer;color:inherit;animation:pkbob 5.2s ease-in-out infinite;
+  transition:transform .4s cubic-bezier(.2,.9,.25,1),opacity .5s ease,filter .5s ease;
+}
+.pk:nth-child(2){animation-duration:6.1s;animation-delay:-.7s}
+.pk:nth-child(3){animation-duration:4.8s;animation-delay:-1.6s}
+.pk:nth-child(4){animation-duration:5.9s;animation-delay:-2.3s}
+.pk:nth-child(5){animation-duration:4.4s;animation-delay:-.4s}
+.pk i{
+  position:absolute;inset:8% 0;border-radius:50%;
+  background:radial-gradient(circle at 50% 56%,rgba(255,170,205,.45),transparent 70%);
+  filter:blur(5px);
+}
+.pk span{
+  position:relative;width:78%;aspect-ratio:1/1.22;border-radius:4px;
+  display:grid;place-items:center;
+  font-family:var(--f-display);font-weight:700;font-size:.95rem;line-height:1;
+  color:#5e1536;text-shadow:0 1px 0 rgba(255,236,206,.5);
+  background:
+    radial-gradient(52% 44% at 50% 62%,rgba(255,236,206,.9),rgba(255,207,150,.35) 55%,transparent 78%),
+    linear-gradient(168deg,#ff86b4 4%,#bf3f76 96%);
+  box-shadow:0 0 22px -5px rgba(255,134,180,.75),inset 0 -10px 14px -10px rgba(43,13,34,.8);
+}
+.pk:active{transform:scale(.95)}
+.pk:focus-visible{outline:2px solid var(--blush);outline-offset:4px;border-radius:10px}
+.pkgrid.done .pk{pointer-events:none;animation-play-state:paused}
+.pkgrid.done .pk:not(.chosen){opacity:.16;filter:saturate(.25) blur(1px);transform:scale(.86)}
+.pk.chosen{animation:none;transform:translateY(-5px) scale(1.14);z-index:2}
+.pk.chosen span{color:transparent;box-shadow:0 0 46px 2px rgba(255,195,225,.95),inset 0 -10px 14px -10px rgba(43,13,34,.5)}
 .sheet .found{
   font-family:var(--f-display);font-weight:700;color:var(--gold);
   font-size:1.15rem;line-height:1.8;margin:0;
@@ -242,6 +275,16 @@ a{color:var(--blush)}
     <p class="sub">နင့်လက်ထဲမှာ ဖယောင်းတိုင်တစ်တိုင်ပဲ ရှိတယ်။ ရွာထဲက နေရာ ၅ ခုမှာ မီးထွန်းပေးပါ — တစ်နေရာစီမှာ <span class="nm">Gintoki</span> ဝှက်ထားတဲ့ တစ်ခုခု တွေ့လိမ့်မယ်။</p>
     <p class="sub">ဘယ်ဘက်ကို လက်မနဲ့ ဆွဲပြီး လမ်းလျှောက်။ နေရာတစ်ခုနားရောက်ရင် ညာဘက်က မီးခလုတ်ကို နှိပ်။</p>
     <button class="btn" id="go" type="button">ခရီးစတင်မယ်</button>
+  </div>
+</div>
+
+<!-- choose a lantern -->
+<div class="veil" id="pick" hidden>
+  <div class="sheet panel">
+    <p class="eyebrow">မုန့်ဖိုးထုပ် ဖွင့်လိုက်တော့</p>
+    <h2>မီးပုံးတစ်လုံး ရွေးပါ</h2>
+    <p class="sub">ရွေးလိုက်တဲ့ မီးပုံးထဲက ပေါက်တာ နင့်ဟာပဲ။</p>
+    <div class="pkgrid" id="pkgrid"></div>
   </div>
 </div>
 
@@ -488,8 +531,8 @@ var STATION_POS = [
 var LANE = [
   [0,8],[-7,2],[-15,-4],[-20,-8],
   [-16,-16],[-4,-22],[10,-27],[22,-30],[27,-30],
-  [20,-38],[6,-43],[-8,-43],
-  [-6,-54],[2,-62],[12,-67],
+  [20,-38],[8,-42],[0,-43],
+  [2,-50],[2,-58],[6,-63],[12,-67],
   [20,-60],[24,-46],[23,-28],[21,-14],[16,-3],[10,5]
 ];
 
@@ -541,10 +584,13 @@ var GW = GX1-GX0+1, GH = GZ1-GZ0+1;
   var g = c.getContext("2d");
   for(var x=GX0; x<=GX1; x++){
     for(var z=GZ0; z<=GZ1; z++){
+      var P2 = STATION_POS[2];
+      var plaza = (x >= P2.x-7 && x <= P2.x+7 && z >= P2.z+5 && z <= P2.z+11.5);
       var col, near = distToPath(x, z);
-      if(isWater(x,z))      col = vary(C.sand, 10);
-      else if(near < 2.4)   col = vary(near < 1.5 ? C.path : C.pathD, 12);
-      else                  col = vary(Math.random() < 0.25 ? C.grassD : C.grass, 11);
+      if(isWater(x,z))     col = vary(C.sand, 10);
+      else if(plaza)       col = vary(C.pathD, 10);
+      else if(near < 2.4)  col = vary(near < 1.5 ? C.path : C.pathD, 12);
+      else                 col = vary(Math.random() < 0.25 ? C.grassD : C.grass, 11);
       var px = (x - GX0)*BPX, pz = (z - GZ0)*BPX;
       g.fillStyle = "#" + ("000000" + col.toString(16)).slice(-6);
       g.fillRect(px, pz, BPX, BPX);
@@ -554,7 +600,7 @@ var GW = GX1-GX0+1, GH = GZ1-GZ0+1;
         g.fillStyle = "#" + ("000000" + sp.toString(16)).slice(-6);
         g.fillRect(px + ((Math.random()*BPX)|0), pz + ((Math.random()*BPX)|0), 2, 2);
       }
-      if(isWater(x,z) || near < 2.6) continue;
+      if(isWater(x,z) || plaza || near < 2.6) continue;
       var border = near < 5.2;                       /* the planted verge beside the lane */
       var r = Math.random();
       var fl = border ? 0.34 : 0.05, bu = border ? 0.62 : 0.15;
@@ -983,7 +1029,7 @@ scene.add(candleLight);
 
 var gintoki = makeBoy();
 gintoki.position.set(ARCH.x, 0, ARCH.z - 1.6);
-gintoki.rotation.y = Math.PI;
+gintoki.rotation.y = 0;   /* facing the way she arrives */
 scene.add(gintoki);
 var gShadow = blobShadow(1.7);
 gShadow.position.set(gintoki.position.x, .03, gintoki.position.z);
@@ -1229,7 +1275,7 @@ function seqPagoda(fin){
 }
 
 /* the ending: the lantern, the kiss, the village, and the box */
-function seqFinale(prize, fin){
+function seqFinale(fin){
   var big = null, box = null, hx = 0, hz = 0;
   return [
     sSay("Gintoki \u1000 \u1019\u102E\u1038\u1015\u102F\u1036\u1038\u1000\u103C\u102E\u1038\u1014\u1032\u1037 \u1005\u1031\u102C\u1004\u103A\u1037\u1014\u1031\u1010\u101A\u103A"),
@@ -1284,7 +1330,7 @@ function seqFinale(prize, fin){
     sWait(1.5),
 
     /* the present */
-    sSay("Gintoki \u1000 \u101C\u1000\u103A\u1006\u1031\u102C\u1004\u103A\u1010\u1005\u103A\u1001\u102F \u1015\u1031\u1038\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
+    sSay("Gintoki \u1000 \u101e\u102e\u1010\u1004\u103a\u1038\u1000\u103b\u103d\u1010\u103a \u1019\u102f\u1014\u103a\u1037\u1016\u102d\u102f\u1038 \u1015\u1031\u1038\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
     sCam(-1.55, 3.8, 2.1, 1.6),
     sDo(function(){
       box = presentBox();
@@ -1313,15 +1359,13 @@ function seqFinale(prize, fin){
       chime(PRIZE_CHIME);
     }),
     sArm(0, 0.4),
-    sWait(0.6),
+    sWait(0.9),
     sHush(),
-    sDo(function(){ skyPrize(prize); }),
-    sCam(Math.PI - 1.15, 11, 6.2, 2.9),
-    sWait(3.2)
+    sWait(0.3)
   ];
 }
 
-var ACT_LABEL = ["ချိတ်မယ်","မျှောမယ်","ပူဇော်မယ်","အာဘွားပေးမယ်"];
+var ACT_LABEL = ["ချိတ်မယ်","မျှောမယ်","ပူဇော်မယ်","တွေ့မယ်"];
 var ACT_R     = [7.5, 8, 11, 7];
 
 /* beacon above each unfound station so she can find it in the dark */
@@ -1378,6 +1422,7 @@ var ARROWS = (function(){
     var m = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
       color: 0xffd9a0, transparent:true, opacity:0, depthWrite:false
     }));
+    m.scale.set(1, 0.22, 1);        /* flatten so it reads as a chevron on the ground */
     m.visible = false; scene.add(m); a.push(m);
   }
   return a;
@@ -1794,7 +1839,7 @@ var PRIZE_CHIME = [[784,0],[1046.5,0.14],[1318.5,0.3],[1568,0.46]];
 
 /* ============================ finale ============================ */
 var prizeEl = $("prize"), numEl = $("num"), wordsEl = $("words"), lockedEl = $("locked");
-var FINALE_TEXT = "ရွာတစ်ရွာလုံး မီးတွေနဲ့ လင်းနေပြီ။ ကောင်းကင်ထဲက နင့်လက်ဆောင်ပါ။";
+var FINALE_TEXT = "ရွာတစ်ရွာလုံး မီးတွေနဲ့ လင်းနေပြီ။ ကောင်းကင်ထဲက နင့် သီတင်းကျွတ် မုန့်ဖိုးပါ။";
 
 /* the amount arrives over the village rather than in a box */
 function skyPrize(amount){
@@ -1841,12 +1886,53 @@ function settle(a){
   lockedEl.textContent = "သတ်မှတ်ပြီးသွားပြီ — ဒီလင့်ကို ပြန်ဖွင့်လည်း "
     + mmN(a) + " ကျပ်ပဲ ဖြစ်မယ်။";
 }
+var FINALE_CAM = { yaw: Math.PI - 1.15, dist: 11, h: 6.2, look: 2.9 };
+var pickEl = $("pick"), pkGrid = $("pkgrid"), picked = false;
+
+function showPicker(){
+  picked = false;
+  pkGrid.innerHTML = "";
+  pkGrid.classList.remove("done");
+  for(var i=0;i<5;i++){
+    var b = document.createElement("button");
+    b.type = "button";
+    b.className = "pk";
+    b.setAttribute("aria-label", "\u1019\u102E\u1038\u1015\u102F\u1036\u1038 " + mmD(i+1));
+    b.innerHTML = '<i></i><span>' + mmD(i+1) + '</span>';
+    pkGrid.appendChild(b);
+  }
+  pickEl.hidden = false;
+  pickEl.classList.remove("fading");
+}
+
+pkGrid.addEventListener("click", function(ev){
+  var b = ev.target.closest(".pk");
+  if(!b || picked) return;
+  picked = true;
+  b.classList.add("chosen");
+  pkGrid.classList.add("done");
+  chime(FIND_CHIME);
+  var amount = drawPrize();
+  state.amount = amount;
+  save();
+  setTimeout(function(){
+    pickEl.classList.add("fading");
+    setTimeout(function(){
+      pickEl.hidden = true;
+      skyPrize(amount);
+      chime(PRIZE_CHIME);
+      setTimeout(function(){ showPrize(); }, 3200);
+    }, 620);
+  }, 1200);
+});
+
 var backBtn = document.createElement("button");
 backBtn.type = "button";
 backBtn.className = "btn ghost";
 backBtn.textContent = "ရွာထဲ ပြန်လျှောက်မယ်";
 backBtn.addEventListener("click", function(){
   if(skySprite){ camera.remove(skySprite); skySprite = null; }
+  camFocus = null;
   prizeEl.classList.add("fading");
   setTimeout(function(){ prizeEl.hidden = true; paused = false; }, REDUCED ? 0 : 560);
 });
@@ -1906,11 +1992,9 @@ actEl.addEventListener("click", function(){
   function settleStation(){ st.light(); addStationLight(st.idx); }
 
   if(st.locked){
-    if(!state.amount) state.amount = drawPrize();
-    save();
-    cut(seqFinale(state.amount, settleStation), function(){
-      chime(PRIZE_CHIME);
-      showPrize();
+    cut(seqFinale(settleStation), function(){
+      camFocus = FINALE_CAM;
+      showPicker();
     });
   } else {
     cut(SEQ_FOR[st.key](settleStation), function(){ paused = false; });
@@ -1932,9 +2016,9 @@ var introEl = $("intro");
 var replay = countFound() >= 4 && state.amount > 0;
 if(replay){
   introEl.querySelector("h1").textContent = "ရွာလေး လင်းနေပြီ";
-  introEl.querySelectorAll("p")[1].textContent = "နင် ဒီခရီးကို ပြီးခဲ့ပြီးပြီ။ လက်ဆောင်ကို ပြန်ကြည့်လို့ရတယ်။";
+  introEl.querySelectorAll("p")[1].textContent = "နင် ဒီခရီးကို ပြီးခဲ့ပြီးပြီ။ မုန့်ဖိုးကို ပြန်ကြည့်လို့ရတယ်။";
   introEl.querySelectorAll("p")[2].textContent = "";
-  $("go").textContent = "လက်ဆောင် ပြန်ကြည့်မယ်";
+  $("go").textContent = "မုန့်ဖိုး ပြန်ကြည့်မယ်";
 }
 introEl.hidden = false;
 
@@ -1951,6 +2035,11 @@ $("go").addEventListener("click", function(){
   paused = false;
   MUSIC.start();
   if(replay){ showPrize(false); }
+  else if(countFound() >= 4){
+    paused = true;
+    camFocus = FINALE_CAM;
+    showPicker();
+  }
   else {
     hintEl.textContent = "ဘယ်ဘက်မှာ လက်မနဲ့ ဆွဲပြီး လမ်းလျှောက်ပါ";
     hintEl.classList.add("show");

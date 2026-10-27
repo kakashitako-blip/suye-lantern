@@ -78,8 +78,16 @@ out, and comes back to her door. It never runs through a building.
 | 1 | `tree` | ညောင်ပင် | ချိတ်မယ် | walks up, reaches into the branches, hangs the lanterns |
 | 2 | `creek` | ချောင်းနားက ကျောက်တုံး | မျှောမယ် | kneels at the bank, sets the candle boat down, pushes it off |
 | 3 | `pagoda` | ဘုရား | ပူဇော်မယ် | kneels, lights seven oil lamps one by one, bows |
-| 4 | `gintoki` | နောက်ဆုံးမီးပုံး | သွားမယ် | meets him, they release the big lantern into the sky |
-| 5 | `house` | အိမ် | မီးထွန်း | lights the windowsill candles, the whole village blazes, the prize rises in the sky |
+| 4 | `gintoki` | Gintoki | တွေ့မယ် | lantern release, the kiss, the village lights, he gives her the မုန့်ဖိုး, she opens it and picks a lantern |
+
+
+The house is scenery, not a stop — four stops in total.
+
+**Wording:** the gift is always သီတင်းကျွတ် မုန့်ဖိုး, never "present" or လက်ဆောင်.
+
+**The draw happens last.** Opening the box ends the scene and shows `#pick` — five
+lanterns. Tapping one calls `drawPrize()`, saves, fires `skyPrize()`, then the panel. If she
+reloads after finishing the walk but before picking, the start button reopens the picker.
 
 **No modal cards.** Clicking the button plays a scripted scene — she walks, kneels, reaches,
 bows — with one line of Burmese subtitle fading in at each beat. Scenes run 7-13 s.
