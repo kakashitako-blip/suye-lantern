@@ -92,6 +92,12 @@ the whole pool, and the same panel becomes the result — her number big, then e
 listed with hers highlighted, so she can see what she missed. The pool is stored, so a reload
 shows the same five rather than re-rolling. There is no number in the sky; that was removed.
 
+**Music is generated, never a file.** A slow A-minor pentatonic drift: triangle oscillators
+with a ~1.1 s swell, 7-10 s decay, through a lowpass and a convolution reverb built from a
+decaying noise burst, over a low two-oscillator pad breathing on a 22 s LFO. One shared
+`AudioContext` feeds this and `chime()`. Do not add a commercial track: the page is public, so
+hosting one would be distributing it.
+
 **The camera can orbit a focus point.** `sCam(yaw, dist, h, look)` builds `camFocus`; set
 `camFocus.at` to a Vector3 and the camera orbits and looks at that instead of the player.
 The lantern release uses it to centre between the two of them. **The obstacle test must use
