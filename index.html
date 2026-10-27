@@ -479,9 +479,13 @@ composer.setPixelRatio(Math.min(MOBILE ? 1.8 : 2.2, window.devicePixelRatio || 1
 composer.setSize(innerWidth, innerHeight);
 
 /* ============================ lights ============================ */
-var hemi = new THREE.HemisphereLight(0x3550a0, 0x15101f, 0.11);
+/* The night stays dark and the flames do the lighting. Ambient and moon are
+   deliberately low: raising them floods the open grass and flattens
+   everything, which is the look the river scene avoids by being lit almost
+   entirely by its own candles. */
+var hemi = new THREE.HemisphereLight(0x3550a0, 0x15101f, 0.06);
 scene.add(hemi);
-var moonLight = new THREE.DirectionalLight(0xb9ccff, 0.46);
+var moonLight = new THREE.DirectionalLight(0xb9ccff, 0.22);
 moonLight.position.set(-44, 66, 26);
 moonLight.castShadow = true;
 moonLight.shadow.mapSize.set(MOBILE ? 2048 : 4096, MOBILE ? 2048 : 4096);
@@ -927,14 +931,18 @@ var laneLamps = [];
   });
 })();
 
-treeLanterns = [[-1.5,2.9,1.3],[1.5,3.05,-1.1],[0,2.75,1.9]].map(function(p){
+/* low enough that she reaches up and hangs them, rather than reaching over her head */
+treeLanterns = [[-1.15,2.35,1.0],[1.15,2.45,-0.85],[0,2.25,1.45]].map(function(p){
   return lantern(TREE.x+p[0], p[1], TREE.z+p[2], 0.6, false);
 });
-(function bigTree(){
-  TRUNKS.push({ x:TREE.x, z:TREE.z, r:1.4 });
-  var h = 4, y;
-  for(y=0;y<h;y++) box(SOLID, TREE.x, y+0.5, TREE.z, 1.3, vary(C.wood,12), 1);
-  canopy(SOLID, TREE.x, 5.2, TREE.z, 3.0, [C.sakura, C.sakuraD, C.sakuraL], true);
+(function nyaungPin(){
+  /* a banyan, so green - the pink belongs on the sakura along the lane */
+  TRUNKS.push({ x:TREE.x, z:TREE.z, r:1.2 });
+  var h = 3, y;
+  for(y=0;y<h;y++) box(SOLID, TREE.x, y+0.5, TREE.z, 1.1, vary(C.wood,12), 1);
+  /* integer radius and a half-step centre, so the canopy lands on the same
+     grid as the trunk; the hanging strands read as a banyan's aerial roots */
+  canopy(SOLID, TREE.x, 4.5, TREE.z, 2, [C.leaf, C.leafD, 0x3d7a30], true);
 })();
 
 /* ---- water ---- */
@@ -1176,7 +1184,8 @@ player.position.set(0, 0, 8);
 scene.add(player);
 var pShadow = blobShadow(1.8); scene.add(pShadow);
 
-var candleLight = new THREE.PointLight(0xffa94a, 1.25, 13, 2);
+/* with the night this dark, the candle in her hand is what lights her way */
+var candleLight = new THREE.PointLight(0xffa94a, 2.7, 17, 2);
 candleLight.position.set(0, 1.5, 0);
 scene.add(candleLight);
 
@@ -1217,17 +1226,17 @@ TRUNKS.push({ x:ARCH.x+4, z:ARCH.z, r:0.5 });
 var rockObj = new THREE.Object3D();
 rockObj.position.set(ROCK.x, 0, ROCK.z);
 var drifters = [];
-var hemiTarget = 0.34;
+var hemiTarget = 0.14;
 
 /* ============================ stations ============================ */
 /* order: nyaung pin -> river -> pagoda -> Gintoki -> home (home lights the village) */
 var STATIONS = [
   { key:"tree",    name:"\u100A\u1031\u102C\u1004\u103A\u1015\u1004\u103A",
-    light: function(){ treeLanterns.forEach(lightLantern); hemiTarget = 0.22; } },
+    light: function(){ treeLanterns.forEach(lightLantern); hemiTarget = 0.12; } },
   { key:"creek",   name:"\u1001\u103B\u1031\u102C\u1004\u103A\u1038\u1014\u102C\u1038\u1000 \u1000\u103B\u1031\u102C\u1000\u103A\u1010\u102F\u1036\u1038",
-    light: function(){ spawnDrifters(); hemiTarget = 0.30; } },
+    light: function(){ spawnDrifters(); hemiTarget = 0.14; } },
   { key:"pagoda",  name:"\u1018\u102F\u101B\u102C\u1038",
-    light: function(){ pagLamps.forEach(litFlame(1.1, 0.24)); hemiTarget = 0.40; } },
+    light: function(){ pagLamps.forEach(litFlame(1.1, 0.24)); hemiTarget = 0.15; } },
   { key:"gintoki", name:"Gintoki", locked: true,
     light: function(){
       archLanterns.forEach(lightLantern);
@@ -1375,8 +1384,8 @@ function villageAblaze(){
   LANTERNS.forEach(function(l){ if(!l.userData.lit) lightLantern(l); });
   /* the village reads as lit because its lanterns are lit, not because the
      exposure is cranked; that is what washed the whole scene out before */
-  hemiTarget = 0.26;
-  moonLight.intensity = 0.52;
+  hemiTarget = 0.16;
+  moonLight.intensity = 0.26;
   bloom.strength = (MOBILE ? 0.30 : 0.40) * 1.12;
   renderer.toneMappingExposure = 0.88;
 }
@@ -1405,7 +1414,10 @@ function hangLantern(k){
         L.position.lerpVectors(from, to, e);
         L.position.y += Math.sin(p*Math.PI)*0.22;
       } },
-    sDo(function(){ lightLantern(L); }),
+    sDo(function(){
+      lightLantern(L);
+      brightenPlace("tree", TREE.x, 2.5, TREE.z, 1.3, 3.6, 17);
+    }),
     sWait(0.4),
     sArm(-0.25, 0.45)
   ];
@@ -1428,6 +1440,21 @@ function seqTree(fin){
 }
 
 /* she sets each little boat down herself, four times */
+/* A lit candle should actually light what is around it. One shared warm light
+   per place, brightened as each one is lit, which is what makes the river
+   scene read: dark night, warm pools, real falloff. */
+var placeGlow = {};
+function brightenPlace(key, x, y, z, step, max, dist){
+  var g = placeGlow[key];
+  if(!g){
+    g = placeGlow[key] = new THREE.PointLight(0xffb066, 0, dist, 2);
+    g.position.set(x, y, z);
+    scene.add(g);
+  }
+  g.intensity = Math.min(max, g.intensity + step);
+  return g;
+}
+
 /* the gathered candles light her face from the water; it brightens per boat */
 var riverGlow = null;
 function boatLaunch(i){
@@ -1503,7 +1530,10 @@ function seqPagoda(fin){
       if(k > 0) steps.push(sWalk(PAG.x - 4 + k*2, PAG.z + 8.4, 0.75));
       steps.push(sFace(PAG.x - 4 + k*2, PAG.z));
       steps.push(sArm(-0.85, 0.42));
-      steps.push(sDo(function(){ if(pagLamps[k]) litFlame(1.1, 0.24)(pagLamps[k]); }));
+      steps.push(sDo(function(){
+        if(pagLamps[k]) litFlame(1.1, 0.24)(pagLamps[k]);
+        brightenPlace("pagoda", PAG.x - 4 + k*2, 1.5, PAG.z + 3.0, 0.85, 3.4, 15);
+      }));
       steps.push(sWait(0.32));
       steps.push(sArm(-0.1, 0.34));
     })(i);
@@ -1529,6 +1559,7 @@ function seqFinale(fin){
     sFace(gintoki.position.x, gintoki.position.z),
     sCam(-1.45, 7.2, 3.0, 1.8),
     sStagger(archLanterns, 1.2, lightLantern),
+    sDo(function(){ brightenPlace("arch", ARCH.x, 4.2, ARCH.z, 3.0, 3.0, 24); }),
     sWait(0.5),
     sSay("\u1014\u103E\u1005\u103A\u101A\u1031\u102C\u1000\u103A\u101E\u102C\u1038 \u1019\u102E\u1038\u1015\u102F\u1036\u1038\u1000\u102D\u102F \u101C\u1031\u1011\u1032 \u101C\u103D\u103E\u1010\u103A\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
     sCam(Math.PI - 0.45, 9.0, 3.2, 1.9),
@@ -1663,9 +1694,10 @@ STATIONS.forEach(function(st, i){
   st.ring = ring; st.beam = beam; st.pos = p; st.idx = i;
 });
 
-var LAMP_Y = [5.4, 1.1, 3.2, 4.4];
-var LAMP_I = [0.95, 0.8, 1.4, 1.1];
-var LAMP_D = [26, 22, 38, 28];
+/* with the ambient down, these carry the scene - warm pools with real falloff */
+var LAMP_Y = [3.4, 1.1, 3.2, 4.4];
+var LAMP_I = [1.9, 1.7, 2.6, 2.1];
+var LAMP_D = [22, 20, 32, 25];
 function addStationLight(i){
   var p = STATION_POS[i];
   var L = new THREE.PointLight(0xffa755, LAMP_I[i], LAMP_D[i], 2);
