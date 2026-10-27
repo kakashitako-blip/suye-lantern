@@ -135,6 +135,22 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
   transition:opacity .7s ease,transform .7s ease;
 }
 #sub.show{opacity:1;transform:none}
+#bark{
+  position:fixed;z-index:6;left:0;top:0;pointer-events:none;
+  transform:translate(-50%,-115%);
+  padding:7px 15px;border-radius:14px;
+  background:rgba(43,13,34,.84);
+  border:1px solid rgba(255,217,233,.3);
+  color:var(--blush);font-family:var(--f-body);font-weight:700;
+  font-size:.85rem;line-height:1.75;white-space:nowrap;
+  opacity:0;transition:opacity .3s ease;
+  box-shadow:0 8px 24px -12px rgba(0,0,0,.9);
+}
+#bark::after{
+  content:"";position:absolute;left:50%;bottom:-6px;margin-left:-6px;
+  border:6px solid transparent;border-top-color:rgba(43,13,34,.84);border-bottom:0;
+}
+#bark.show{opacity:1}
 
 /* ---------- action button ---------- */
 #act{
@@ -283,6 +299,7 @@ a{color:var(--blush)}
 <div id="stick"><div id="knob"></div></div>
 <div id="hint"></div>
 <button id="act" type="button" hidden></button>
+<div id="bark"></div>
 
 <!-- intro -->
 <div class="veil" id="intro" hidden>
@@ -1337,24 +1354,32 @@ function seqFinale(fin){
     sStagger(archLanterns, 1.2, lightLantern),
     sWait(0.5),
     sSay("\u1014\u103E\u1005\u103A\u101A\u1031\u102C\u1000\u103A\u101E\u102C\u1038 \u1019\u102E\u1038\u1015\u102F\u1036\u1038\u1000\u102D\u102F \u101C\u1031\u1011\u1032 \u101C\u103D\u103E\u1010\u103A\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
-    { dur:0.8, update:function(p){
-        gintoki.userData.armR.rotation.x = -0.5 - 1.3*ease(p);
-        armRaise = -1.1*ease(p); } },
-    sDo(function(){ lightLantern(gintokiLantern); }),
-    sWait(0.5),
+    sCam(Math.PI - 0.45, 9.0, 3.2, 1.9),
     sDo(function(){
+      /* the two of them hold it between them, and the shot centres on that point */
       big = gintokiLantern;
-      var wp = new THREE.Vector3(); big.getWorldPosition(wp);
-      scene.add(big); big.position.copy(wp);
+      scene.add(big);
+      var mx = (player.position.x + gintoki.position.x)/2;
+      var mz = (player.position.z + gintoki.position.z)/2;
+      big.position.set(mx, 1.45, mz);
+      big.scale.setScalar(1.5);
+      if(camFocus) camFocus.at = new THREE.Vector3(mx, 0, mz);
     }),
-    sCam(-1.45, 9.5, 4.6, 7.0),
-    { dur:2.6, update:function(p){
+    { dur:0.9, update:function(p){
+        gintoki.userData.armR.rotation.x = -0.5 - 1.0*ease(p);
+        armRaise = -0.95*ease(p); } },
+    sDo(function(){ lightLantern(big); }),
+    sWait(1.0),
+    /* up slowly, the shot tilting just enough to keep them both in frame */
+    { dur:4.6, update:function(p){
         var e = ease(p);
-        big.position.y = 1.0 + 15*e;
-        big.userData.halo.material.opacity = 0.5*(1 - e*0.5); } },
+        big.position.y = 1.45 + 6.6*e;
+        big.scale.setScalar(1.5 + 0.5*e);
+        if(camFocus) camFocus.look = 1.9 + 2.4*e;
+        big.userData.halo.material.opacity = 0.5*(1 - e*0.25); } },
     { dur:0.8, update:function(p){
-        gintoki.userData.armR.rotation.x = -1.8 + 1.3*ease(p);
-        armRaise = -1.1*(1 - ease(p)); } },
+        gintoki.userData.armR.rotation.x = -1.5 + 1.0*ease(p);
+        armRaise = -0.95*(1 - ease(p)); } },
 
     /* the kiss */
     sCam(-1.55, 3.4, 2.0, 1.65),
@@ -1500,20 +1525,43 @@ scene.add(dog);
 var dogShadow = blobShadow(1.15); scene.add(dogShadow);
 var dogHeading = Math.PI, dogPhase = 0;
 
+var barkEl = null, barkV = new THREE.Vector3();
+var DOG_LINES = [
+  "ဒီမှာ မီးပုံးချိတ်မယ်",
+  "ဒီမှာ မီးမျှောမယ်",
+  "ဒီမှာ ဦးချမယ်",
+  "Gintoki ဒီမှာ"
+];
+var DOG_COME = "လာလေ ဒီဘက်";
+
+function nearestLaneTo(x, z){
+  var best = LANE_PTS[0], bd = 1e9;
+  for(var i=0;i<LANE_PTS.length;i++){
+    var dx = LANE_PTS[i].x - x, dz = LANE_PTS[i].z - z;
+    var d = dx*dx + dz*dz;
+    if(d < bd){ bd = d; best = LANE_PTS[i]; }
+  }
+  return best;
+}
+
 function updateDog(dt, t){
+  if(!barkEl) barkEl = document.getElementById("bark");
   var near = (!paused && !CUT) ? nearestStation() : null;
-  var tx, tz;
+  var tx, tz, say = "";
+
   if(near){
-    /* trot ahead along the lane, so she has something to follow */
-    var N = LANE_PTS.length;
-    var ti = STATION_PT[near.st.idx];
-    var pi = nearestPt(player.position.x, player.position.z);
-    var fwd = (ti - pi + N) % N;
-    var lead = Math.min(9, Math.max(2, fwd - 1));
-    var q = LANE_PTS[(pi + lead) % N];
-    tx = q.x; tz = q.z;
+    /* aim at a point a few steps ahead of her toward the stop, snapped to the lane
+       so he does not cut through buildings. No lane indices, so nothing can wrap. */
+    var ax = near.st.pos.x - player.position.x, az = near.st.pos.z - player.position.z;
+    var L = Math.hypot(ax, az) || 1;
+    var ahead = Math.min(8, L * 0.65);
+    var gx = player.position.x + ax/L*ahead, gz = player.position.z + az/L*ahead;
+    var q = nearestLaneTo(gx, gz);
+    /* only follow the lane while it actually makes progress */
+    if(Math.hypot(q.x - near.st.pos.x, q.z - near.st.pos.z) < L){ tx = q.x; tz = q.z; }
+    else { tx = gx; tz = gz; }
+    say = (near.d < ACT_R[near.st.idx]) ? DOG_LINES[near.st.idx] : DOG_COME;
   } else if(CUT){
-    /* during a scene, sit off to one side of the shot — never between camera and her */
     tx = player.position.x + Math.cos(camYaw)*3.4;
     tz = player.position.z - Math.sin(camYaw)*3.4;
   } else {
@@ -1521,6 +1569,11 @@ function updateDog(dt, t){
     tx = player.position.x + Math.cos(hh)*1.6;
     tz = player.position.z - Math.sin(hh)*1.6;
   }
+
+  /* never stray out of the world or too far from her */
+  tx = Math.max(-45, Math.min(45, tx));
+  tz = Math.max(-78, Math.min(20, tz));
+
   var dx = tx - dog.position.x, dz = tz - dog.position.z;
   var d = Math.hypot(dx, dz);
   var moving = d > 0.7;
@@ -1531,11 +1584,15 @@ function updateDog(dt, t){
     dogHeading = Math.atan2(dx, dz);
     dogPhase += dt * 13;
   } else {
-    /* arrived: turn round and call her on */
     var bx = player.position.x - dog.position.x, bz = player.position.z - dog.position.z;
     if(Math.hypot(bx, bz) > 0.4) dogHeading = Math.atan2(bx, bz);
     dogPhase += dt * 2.2;
   }
+  /* if he somehow falls far behind, catch up rather than disappear */
+  if(Math.hypot(player.position.x - dog.position.x, player.position.z - dog.position.z) > 26){
+    dog.position.set(player.position.x + 1.5, 0, player.position.z + 1.5);
+  }
+
   var hd = (dogHeading - dog.rotation.y + Math.PI*3) % (Math.PI*2) - Math.PI;
   dog.rotation.y += hd * Math.min(1, dt*10);
 
@@ -1548,6 +1605,17 @@ function updateDog(dt, t){
   ud.tail.rotation.y = Math.sin(t*(moving ? 10 : 6))*0.65;
   ud.head.rotation.x = moving ? 0 : Math.sin(t*1.7)*0.12;
   dogShadow.position.set(dog.position.x, 0.03, dog.position.z);
+
+  /* he only speaks once he has stopped and is looking back at her */
+  if(say && !moving && !paused && !CUT){
+    barkV.set(dog.position.x, 1.35, dog.position.z).project(camera);
+    if(barkV.z < 1){
+      barkEl.textContent = say;
+      barkEl.style.left = ((barkV.x*0.5 + 0.5) * innerWidth) + "px";
+      barkEl.style.top  = ((-barkV.y*0.5 + 0.5) * innerHeight) + "px";
+      barkEl.classList.add("show");
+    } else barkEl.classList.remove("show");
+  } else barkEl.classList.remove("show");
 }
 
 /* things the player cannot walk through */
@@ -1824,23 +1892,25 @@ function tick(){
   var cDist = CAM_DIST, cH = CAM_H, cLerp = 6;
   if(camFocus){ camYawTarget = camFocus.yaw; cDist = camFocus.dist; cH = camFocus.h; cLerp = 1.8; }
   camYaw += ((camYawTarget - camYaw + Math.PI*3) % (Math.PI*2) - Math.PI) * Math.min(1, dt*(camFocus?2.0:4.5));
+  var fx = player.position.x, fz = player.position.z;
+  if(camFocus && camFocus.at){ fx = camFocus.at.x; fz = camFocus.at.z; }
   var sx = -Math.sin(camYaw), sz = -Math.cos(camYaw), want = cDist;
   for(var ci=0; ci<TRUNKS.length; ci++){
     var TK = TRUNKS[ci];
-    var tdx = TK.x - player.position.x, tdz = TK.z - player.position.z;
+    var tdx = TK.x - fx, tdz = TK.z - fz;
     var along = tdx*sx + tdz*sz;
     if(along < 0.3 || along > want) continue;
     if(Math.abs(tdx*sz - tdz*sx) < TK.r + 0.5) want = Math.max(2.0, along - TK.r - 0.5);
   }
   tmp.set(
-    player.position.x + sx*want,
+    fx + sx*want,
     cH - (cDist - want) * 0.14,
-    player.position.z + sz*want
+    fz + sz*want
   );
   camera.position.lerp(tmp, Math.min(1, dt*cLerp));
-  camera.lookAt(player.position.x,
+  camera.lookAt(fx,
     (camFocus && camFocus.look != null) ? camFocus.look : 1.15,
-    player.position.z);
+    fz);
 
   composer.render();
 }

@@ -92,8 +92,18 @@ the whole pool, and the same panel becomes the result — her number big, then e
 listed with hers highlighted, so she can see what she missed. The pool is stored, so a reload
 shows the same five rather than re-rolling. There is no number in the sky; that was removed.
 
-**A village dog leads the way** instead of arrow markers (which were removed). It trots ahead
-along `LANE_PTS` toward the next stop, and when it arrives before she does it turns round and
+**The camera can orbit a focus point.** `sCam(yaw, dist, h, look)` builds `camFocus`; set
+`camFocus.at` to a Vector3 and the camera orbits and looks at that instead of the player.
+The lantern release uses it to centre between the two of them. **The obstacle test must use
+the same point** — it originally measured from the player while the camera orbited the focus,
+which let an arch post stand squarely in the line of sight unnoticed.
+
+**A village dog leads the way** instead of arrow markers (which were removed). It aims at a point a few
+steps ahead of her toward the stop, snapped to the nearest lane point, and only when that
+point makes progress. It must **not** navigate by lane index: the lane is a loop that doubles
+back near the river, so a nearest-index lookup can snap to the wrong leg and the forward
+distance wraps most of the way round, sending the dog across the village. There is also a
+hard catch-up if he ends up more than 26 units away. and when it arrives before she does it turns round and
 waits, tail wagging. During a cutscene it parks perpendicular to the camera axis — the first
 version targeted "beside her", which is exactly where the close-up camera sits, so it filled
 the frame.
