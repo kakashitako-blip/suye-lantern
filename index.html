@@ -236,6 +236,10 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 .pkgrid.done .pk:not(.chosen){opacity:.16;filter:saturate(.25) blur(1px);transform:scale(.86)}
 .pk.chosen{animation:none;transform:translateY(-5px) scale(1.14);z-index:2}
 .pk.chosen span{color:transparent;box-shadow:0 0 46px 2px rgba(255,195,225,.95),inset 0 -10px 14px -10px rgba(43,13,34,.5)}
+.snap{margin:2px 0 0;width:100%;display:flex;flex-direction:column;align-items:center;gap:9px}
+.snap img{width:64%;max-width:236px;border-radius:14px;border:1px solid var(--line);
+  box-shadow:0 18px 40px -18px rgba(0,0,0,.85);display:block}
+.snap figcaption{font-size:.82rem;line-height:1.9;color:var(--muted)}
 .pkresult{display:flex;flex-direction:column;gap:12px;align-items:center;width:100%;
   animation:rise .55s cubic-bezier(.2,.9,.25,1) both}
 .pklist{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:5px}
@@ -321,9 +325,14 @@ a{color:var(--blush)}
     <div class="pkresult" id="pkResult" hidden>
       <p class="amount"><span id="num">၀</span><span class="unit">ကျပ်</span></p>
       <p class="words" id="words"></p>
+      <figure class="snap" id="snapWrap" hidden>
+        <img id="snapImg" alt="">
+        <figcaption>သီတင်းကျွတ်ည မှတ်တမ်း</figcaption>
+      </figure>
       <p class="sub" id="pkElse">တခြားမီးပုံးတွေမှာ</p>
       <ul class="pklist" id="pklist"></ul>
       <button class="btn" id="copyBtn" type="button">ကော်ပီကူးယူ</button>
+      <button class="btn ghost" id="saveSnap" type="button" hidden>ပုံ သိမ်းမယ်</button>
     </div>
   </div>
 </div>
@@ -365,6 +374,7 @@ if(!window.THREE || !hasWebGL()){
 var REDUCED = matchMedia("(prefers-reduced-motion: reduce)").matches;
 var MOBILE  = matchMedia("(pointer: coarse)").matches && Math.min(innerWidth, innerHeight) < 900;
 var SAVE_KEY = "suye-lantern-journey-v1";
+var SNAP_KEY = "suye-lantern-kiss-v1";
 
 /* ============================ burmese helpers ============================ */
 var MM_D = "၀၁၂၃၄၅၆၇၈၉";
@@ -466,6 +476,15 @@ function makeGlow(texFn, size, opacity){
   }));
   s.scale.set(size, size, 1);
   return s;
+}
+
+/* a flame mirrored under the surface: the water is 58% opaque, so the glow
+   reads as a reflection lying on it rather than an object below it */
+function waterReflection(size){
+  var r = makeGlow(WARM, 1, 0.38);
+  r.scale.set(0.55*size, 1.7*size, 1);
+  r.position.y = -0.30;
+  return r;
 }
 
 var FLAMES = [];
@@ -976,7 +995,8 @@ var PETALS = (function(){
   for(var i=0;i<n;i++){
     var x = -46 + Math.random()*92, y = Math.random()*22, z = -78 + Math.random()*90;
     pos[i*3]=x; pos[i*3+1]=y; pos[i*3+2]=z;
-    seeds.push({ x:x, z:z, fall:.7+Math.random()*1.1, p:Math.random()*9, sway:.6+Math.random()*1.1 });
+    seeds.push({ x:x, z:z, fall:.7+Math.random()*1.1, p:Math.random()*9, sway:.6+Math.random()*1.1,
+                 drift:.45+Math.random()*.9, d:Math.random()*20-10 });
   }
   var c = document.createElement("canvas"); c.width = c.height = 16;
   var g = c.getContext("2d");
@@ -995,8 +1015,13 @@ var PETALS = (function(){
       for(var i=0;i<seeds.length;i++){
         var s = seeds[i];
         a.array[i*3+1] -= dt * s.fall;
-        if(a.array[i*3+1] < -0.4){ a.array[i*3+1] = 20 + Math.random()*6; }
-        a.array[i*3]   = s.x + Math.sin(t*s.sway + s.p)*1.6;
+        /* the wind carries them along as they come down, rather than dropping
+           them straight; a fresh one starts back upwind */
+        s.d += dt * s.drift;
+        if(a.array[i*3+1] < -0.4 || s.x + s.d > 50){
+          a.array[i*3+1] = 15 + Math.random()*7; s.d = -14 - Math.random()*10;
+        }
+        a.array[i*3]   = s.x + s.d + Math.sin(t*s.sway + s.p)*1.6;
         a.array[i*3+2] = s.z + Math.cos(t*s.sway*0.7 + s.p)*1.6;
       }
       a.needsUpdate = true;
@@ -1123,6 +1148,25 @@ var gShadow = blobShadow(1.7);
 gShadow.position.set(gintoki.position.x, .03, gintoki.position.z);
 scene.add(gShadow);
 gintokiLantern = lantern(gintoki.position.x + .45, 1.0, gintoki.position.z + .35, 0.85, false);
+/* the one they let go together is hers, so it has their names written on it.
+   The same texture goes on emissive, or lighting it would wash the ink out. */
+(function inkLantern(l, top, bottom){
+  var c = document.createElement("canvas"); c.width = 200; c.height = 250;
+  var g = c.getContext("2d");
+  g.fillStyle = "#dd9247"; g.fillRect(0, 0, 200, 250);
+  g.strokeStyle = "rgba(110,62,18,.17)"; g.lineWidth = 2;
+  for(var i=1;i<5;i++){ g.beginPath(); g.moveTo(i*40, 0); g.lineTo(i*40, 250); g.stroke(); }
+  g.fillStyle = "#4a2410"; g.textAlign = "center"; g.textBaseline = "middle";
+  g.font = "bold 56px Georgia, 'Times New Roman', serif";
+  g.fillText(top, 100, 100);
+  g.font = "40px Georgia, 'Times New Roman', serif";
+  g.fillText("\u2661", 100, 150);
+  g.font = "28px Georgia, 'Times New Roman', serif";
+  g.fillText(bottom, 100, 192);
+  var t = new THREE.CanvasTexture(c);
+  var m = l.userData.body.material;
+  m.map = t; m.emissiveMap = t; m.color.setHex(0xffffff); m.needsUpdate = true;
+})(gintokiLantern, "Suye", "Gintoki");
 
 TRUNKS.push({ x:HOUSE.x, z:HOUSE.z, r:4.0 });
 TRUNKS.push({ x:PAG.x,   z:PAG.z,   r:6.4 });
@@ -1268,13 +1312,20 @@ function litFlame(size, y){
     var f = makeFlame(size); f.position.y = y; g.add(f);
   };
 }
+/* Candles already on the water when she gets there. The guard used to be
+   drifters.length, which her own first boat satisfied, so these never
+   appeared at all. */
+var driftersSpawned = false;
 function spawnDrifters(){
-  if(drifters.length) return;
-  for(var i=0;i<5;i++){
+  if(driftersSpawned) return;
+  driftersSpawned = true;
+  for(var i=0;i<7;i++){
     var d = new THREE.Group();
     d.add(px(.7,.1,.7, 0x3f7a2d));
     var f = makeFlame(1.0); f.position.y = .22; d.add(f);
-    d.position.set(RIV.x0 + 1.5 + Math.random()*(RIV.x1-RIV.x0-3), 0.34, -46 - i*5);
+    d.add(waterReflection(1.0));
+    d.position.set(RIV.x0 + 1.4 + Math.random()*(RIV.x1-RIV.x0-2.8), 0.34,
+                   -37 - i*2.6 - Math.random()*1.8);
     scene.add(d); drifters.push(d);
   }
 }
@@ -1351,6 +1402,7 @@ function boatLaunch(i){
       boat = new THREE.Group();
       boat.add(px(.7,.12,.7, 0x3f7a2d));
       var f = makeFlame(1.0); f.position.y = .2; boat.add(f);
+      boat.add(waterReflection(1.0));
       boat.position.set(sx + 0.55, 0.95, player.position.z);
       scene.add(boat);
     }),
@@ -1371,6 +1423,7 @@ function seqCreek(fin){
   var BZ = -34;
   var steps = [
     sSay("\u101B\u1031\u1005\u1015\u103A\u1014\u102C\u1038\u1019\u103E\u102C \u1011\u102D\u102F\u1004\u103A\u1001\u103B\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
+    sDo(spawnDrifters),
     sWalk(RIV.x0 - 1.4, BZ, 1.8),
     sFace(RIV.x0 + 6, BZ),
     /* straight out over the water: she faces the lens square, and the boats
@@ -1461,12 +1514,26 @@ function seqFinale(fin){
     { dur:0.8, update:function(p){
         gintoki.userData.armR.rotation.x = -1.5 + 1.0*ease(p);
         armRaise = -0.95*(1 - ease(p)); } },
+    sDo(function(){
+      risingLantern = big;
+      /* now it is up above them it becomes the key light for the kiss; the
+         falloff is the legacy one, I*(1 - d/distance)^decay */
+      big.add(new THREE.PointLight(0xffc089, 7.5, 34, 2));
+    }),
 
-    /* the kiss */
-    sCam(-1.55, 3.4, 2.0, 1.65),
+    /* The kiss, side on, far enough back to hold them both. The arch posts sit
+       at x = ARCH.x +/- 4 on z = ARCH.z. Square to the side is the one angle
+       that throws both of them clear: the near post falls outside the frame
+       and the far one lands out by the edge rather than between their heads. */
+    sCam(-Math.PI/2, 5.0, 1.85, 1.78),
     sTap("\u1021\u102C\u1018\u103D\u102C\u1038\u1015\u1031\u1038\u1019\u101A\u103A"),
     sSay("\uD83D\uDC97"),
     sWalk(gintoki.position.x - 0.05, gintoki.position.z + 1.0, 1.1),
+    sDo(function(){
+      if(camFocus) camFocus.at = new THREE.Vector3(
+        (player.position.x + gintoki.position.x)/2, 0,
+        (player.position.z + gintoki.position.z)/2);
+    }),
     { dur:0.7, update:function(p){
         var e = ease(p);
         bowAmt = 0.3*e;
@@ -1475,7 +1542,9 @@ function seqFinale(fin){
       heartBurst(new THREE.Vector3(player.position.x, 1.85, player.position.z - 0.5), 18);
       chime([[659,0],[784,0.1],[988,0.22],[1175,0.36]]);
     }),
-    sWait(1.5),
+    sWait(0.5),
+    sDo(function(){ wantSnap = true; }),
+    sWait(1.0),
     { dur:0.6, update:function(p){
         var e = ease(p);
         bowAmt = 0.3*(1-e);
@@ -1486,7 +1555,13 @@ function seqFinale(fin){
     sCam(Math.PI - 1.15, 13, 7.0, 3.0),
     sStagger(laneLamps, 2.6, lightLantern),
     sDo(function(){ villageAblaze(); fin(); }),
-    sWait(1.5),
+    sWait(1.2),
+    sSay("\u1019\u102E\u1038\u1015\u102F\u1036\u1038\u1010\u103D\u1031 \u1000\u1031\u102C\u1004\u103A\u1038\u1000\u1004\u103A\u1015\u103C\u100A\u103A\u1037\u101E\u103D\u102C\u1038\u1015\u103C\u102E"),
+    sDo(releaseSkyLanterns),
+    /* the shot tilts up to follow them instead of letting them leave the frame */
+    { dur:4.4, update:function(p){ if(camFocus) camFocus.look = 3.0 + 6.0*ease(p); } },
+    sWait(1.2),
+    { dur:1.3, update:function(p){ if(camFocus) camFocus.look = 9.0 - 6.0*ease(p); } },
 
     /* the present */
     sSay("Gintoki \u1000 \u101e\u102e\u1010\u1004\u103a\u1038\u1000\u103b\u103d\u1010\u103a \u1019\u102f\u1014\u103a\u1037\u1016\u102d\u102f\u1038 \u1015\u1031\u1038\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
@@ -1727,8 +1802,26 @@ try{
 function save(){
   try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){}
 }
+
+/* A photo of the kiss, kept for her. The frame is grabbed in the same task as
+   the render, before the browser clears the drawing buffer, so the renderer
+   does not have to carry preserveDrawingBuffer all game for one picture. */
+var SNAP = null, wantSnap = false;
+try{ SNAP = localStorage.getItem(SNAP_KEY) || null; }catch(e){}
+function grabSnap(){
+  try{
+    var src = renderer.domElement;
+    if(!src.width) return;
+    var w = Math.min(720, src.width), h = Math.round(w * src.height / src.width);
+    var c = document.createElement("canvas"); c.width = w; c.height = h;
+    c.getContext("2d").drawImage(src, 0, 0, w, h);
+    SNAP = c.toDataURL("image/jpeg", 0.9);
+    try{ localStorage.setItem(SNAP_KEY, SNAP); }catch(e){}
+  }catch(e){}
+}
 if(location.hash === "#reset"){
-  try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
+  try{ localStorage.removeItem(SAVE_KEY); localStorage.removeItem(SNAP_KEY); }catch(e){}
+  SNAP = null;
   state = { found: {}, amount: 0, pool: null, pick: 0 };
 }
 function countFound(){
@@ -1838,6 +1931,99 @@ function nextStation(){
 
 var activeStation = null;
 
+/* ============================ drifting things ============================ */
+/* One Points cloud each, so the whole village costs two draw calls. Each mote
+   keeps its home position and wanders around it; the colour attribute carries
+   the twinkle, since PointsMaterial has no per-point opacity. */
+function mote(n, size, texFn, build){
+  var pos = new Float32Array(n*3), col = new Float32Array(n*3), seed = [];
+  for(var i=0;i<n;i++){
+    var f = build(i);
+    seed.push(f);
+    pos[i*3] = f.x; pos[i*3+1] = f.y; pos[i*3+2] = f.z;
+    col[i*3] = 1; col[i*3+1] = 1; col[i*3+2] = 1;
+  }
+  var g = new THREE.BufferGeometry();
+  g.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  g.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  var pts = new THREE.Points(g, new THREE.PointsMaterial({
+    size: size, map: texFn(), vertexColors: true, blending: THREE.AdditiveBlending,
+    transparent: true, depthWrite: false, fog: false, sizeAttenuation: true
+  }));
+  pts.frustumCulled = false;
+  scene.add(pts);
+  return { g:g, pos:pos, col:col, seed:seed, pts:pts };
+}
+
+var FLIES = mote(MOBILE ? 90 : 165, 0.52, WARM, function(){
+  return { x: -40 + Math.random()*80, y: 0.45 + Math.random()*2.9, z: -76 + Math.random()*86,
+           p: Math.random()*9, s: 0.22 + Math.random()*0.45, r: 1.1 + Math.random()*1.2 };
+});
+function updateFlies(t){
+  var sd = FLIES.seed, pos = FLIES.pos, col = FLIES.col;
+  for(var i=0;i<sd.length;i++){
+    var f = sd[i], k = i*3;
+    pos[k]   = f.x + Math.sin(t*f.s + f.p)*f.r;
+    pos[k+1] = f.y + Math.sin(t*f.s*0.73 + f.p*1.7)*0.42;
+    pos[k+2] = f.z + Math.cos(t*f.s*0.81 + f.p)*f.r;
+    /* each one breathes on its own clock, dimming right down between breaths
+       without ever quite going out, so the field never looks empty */
+    var b = Math.max(0, Math.sin(t*1.5 + f.p*3.1));
+    b = 0.18 + 0.82*b*b;
+    col[k] = b; col[k+1] = b*0.86; col[k+2] = b*0.42;
+  }
+  FLIES.g.attributes.position.needsUpdate = true;
+  FLIES.g.attributes.color.needsUpdate = true;
+}
+
+/* ---- the whole village lets its lanterns go ---- */
+var UPV = new THREE.Vector3(0, 1, 0);
+var risingLantern = null;
+var SKY_L = null;
+function releaseSkyLanterns(){
+  if(SKY_L) return;
+  var n = MOBILE ? 28 : 48;
+  var im = new THREE.InstancedMesh(
+    new THREE.BoxGeometry(0.46, 0.58, 0.46),
+    new THREE.MeshStandardMaterial({ color:0xd89a52, emissive:0xff9436,
+                                     emissiveIntensity:0.9, roughness:.75 }),
+    n);
+  im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  im.frustumCulled = false;
+  scene.add(im);
+  var L = [];
+  for(var i=0;i<n;i++){
+    var a = Math.random()*Math.PI*2, r = 6 + Math.random()*42;
+    L.push({ x: ARCH.x + Math.cos(a)*r, z: ARCH.z + 12 + Math.sin(a)*r,
+             y: 0.7 + Math.random()*4.0, v: 0.8 + Math.random()*1.6,
+             p: Math.random()*9, w: 0.2 + Math.random()*0.6 });
+  }
+  /* the haloes ride along as a second Points cloud, one more draw call */
+  var halo = mote(n, 1.5, WARM, function(i){ return { x:L[i].x, y:L[i].y, z:L[i].z }; });
+  SKY_L = { im:im, halo:halo, L:L, m:new THREE.Matrix4(),
+            q:new THREE.Quaternion(), v3:new THREE.Vector3(), sc:new THREE.Vector3(1,1,1) };
+}
+function updateSkyLanterns(dt, t){
+  if(!SKY_L) return;
+  var L = SKY_L.L, pos = SKY_L.halo.pos, col = SKY_L.halo.col;
+  for(var i=0;i<L.length;i++){
+    var f = L[i];
+    if(f.y < 150) f.y += f.v*dt;
+    var x = f.x + Math.sin(t*0.4 + f.p)*f.w*3;
+    var z = f.z + Math.cos(t*0.33 + f.p)*f.w*3;
+    SKY_L.v3.set(x, f.y, z);
+    SKY_L.q.setFromAxisAngle(UPV, t*0.22 + f.p);
+    SKY_L.m.compose(SKY_L.v3, SKY_L.q, SKY_L.sc);
+    SKY_L.im.setMatrixAt(i, SKY_L.m);
+    var k = i*3;
+    pos[k] = x; pos[k+1] = f.y; pos[k+2] = z;
+    col[k] = 0.95; col[k+1] = 0.66; col[k+2] = 0.30;
+  }
+  SKY_L.im.instanceMatrix.needsUpdate = true;
+  SKY_L.halo.g.attributes.position.needsUpdate = true;
+  SKY_L.halo.g.attributes.color.needsUpdate = true;
+}
+
 function tick(){
   requestAnimationFrame(tick);
   var dt = Math.min(0.1, clock.getDelta());
@@ -1933,6 +2119,9 @@ function tick(){
 
   /* ---- the dog leads the way ---- */
   updateDog(dt, t);
+  updateFlies(t);
+  updateSkyLanterns(dt, t);
+  if(risingLantern) risingLantern.position.y += dt * 0.22;
 
   /* ---- beacons ---- */
   var pulse = 0.4 + Math.sin(t*2.2)*0.18;
@@ -1997,6 +2186,7 @@ function tick(){
     fz);
 
   composer.render();
+  if(wantSnap){ wantSnap = false; grabSnap(); }
 }
 
 addEventListener("resize", function(){
@@ -2039,6 +2229,7 @@ function chime(notes){
 /* a slow pentatonic drift, generated rather than downloaded */
 var MUSIC = (function(){
   var master = null, lp = null, dry = null, wet = null, timer = null, on = true, at = 0;
+  var cricketT = null, drumT = null;
 
   /* a warm major loop, arpeggiated on a music-box voice */
   var CHORDS = [
@@ -2120,6 +2311,59 @@ var MUSIC = (function(){
         lp.connect(dry); dry.connect(master);
         lp.connect(verb); verb.connect(wet); wet.connect(master);
 
+        /* ---- the night underneath the music ---- */
+        var amb = ac.createGain(); amb.gain.value = 1; amb.connect(master);
+
+        /* the river, as noise wandering through a narrow band */
+        var nb = ac.createBuffer(1, ac.sampleRate*2, ac.sampleRate);
+        var nd = nb.getChannelData(0);
+        for(var i=0;i<nd.length;i++) nd[i] = Math.random()*2 - 1;
+        var river = ac.createBufferSource(); river.buffer = nb; river.loop = true;
+        var rbp = ac.createBiquadFilter();
+        rbp.type = "bandpass"; rbp.frequency.value = 520; rbp.Q.value = 0.6;
+        var rg = ac.createGain(); rg.gain.value = 0.05;
+        river.connect(rbp); rbp.connect(rg); rg.connect(amb);
+        var rl = ac.createOscillator(), rlg = ac.createGain();
+        rl.frequency.value = 0.07; rlg.gain.value = 140;
+        rl.connect(rlg); rlg.connect(rbp.frequency);
+        river.start(); rl.start();
+
+        /* crickets, in little runs with gaps between */
+        var cricket = function(){
+          var now = ac.currentTime, runs = 2 + ((Math.random()*3)|0);
+          var base = 3900 + Math.random()*900;
+          for(var k=0;k<runs;k++){
+            var o = ac.createOscillator(), g = ac.createGain(), when = now + k*0.085;
+            o.type = "triangle"; o.frequency.value = base;
+            g.gain.setValueAtTime(0.0001, when);
+            g.gain.linearRampToValueAtTime(0.012, when + 0.006);
+            g.gain.exponentialRampToValueAtTime(0.0001, when + 0.05);
+            o.connect(g); g.connect(amb);
+            o.start(when); o.stop(when + 0.09);
+          }
+          cricketT = setTimeout(cricket, 1400 + Math.random()*3600);
+        };
+        cricketT = setTimeout(cricket, 900);
+
+        /* a festival drum somewhere else in the village: reverb only, no dry
+           signal, which is what puts it across the fields */
+        var drum = function(){
+          var now = ac.currentTime;
+          for(var k=0;k<2;k++){
+            var o = ac.createOscillator(), g = ac.createGain(), when = now + k*0.42;
+            o.type = "sine";
+            o.frequency.setValueAtTime(96, when);
+            o.frequency.exponentialRampToValueAtTime(52, when + 0.25);
+            g.gain.setValueAtTime(0.0001, when);
+            g.gain.linearRampToValueAtTime(0.05, when + 0.01);
+            g.gain.exponentialRampToValueAtTime(0.0001, when + 0.5);
+            o.connect(g); g.connect(verb);
+            o.start(when); o.stop(when + 0.6);
+          }
+          drumT = setTimeout(drum, 18000 + Math.random()*22000);
+        };
+        drumT = setTimeout(drum, 9000);
+
         step();
         timer = setInterval(step, 2850);
       }catch(e){}
@@ -2169,6 +2413,9 @@ function revealResult(pool, idx){
   $("pkTitle").textContent = "\u1002\u102F\u100F\u103A\u101A\u1030\u1015\u102B\u1010\u101A\u103A Suye \u101B\u1031 \uD83D\uDC97";
   numEl.textContent = mmN(a);
   wordsEl.textContent = mmWords(a);
+  var sw = $("snapWrap"), sb = $("saveSnap");
+  if(SNAP){ $("snapImg").src = SNAP; sw.hidden = false; sb.hidden = false; }
+  else { sw.hidden = true; sb.hidden = true; }
   pkList.innerHTML = "";
   var showList = !!(pool && pool.length);
   $("pkElse").hidden = !showList;
@@ -2217,6 +2464,12 @@ backBtn.addEventListener("click", function(){
   setTimeout(function(){ pickEl.hidden = true; paused = false; }, REDUCED ? 0 : 560);
 });
 
+$("saveSnap").addEventListener("click", function(){
+  if(!SNAP) return;
+  var a = document.createElement("a");
+  a.href = SNAP; a.download = "suye-thadingyut.jpg";
+  document.body.appendChild(a); a.click(); a.remove();
+});
 $("copyBtn").addEventListener("click", function(){
   var txt = "Gintoki \u101B\u1031\u104A Suye \u101B\u1032\u1037 \u101E\u102E\u1010\u1004\u103A\u1038\u1000\u103B\u103D\u1010\u103A \u1019\u102F\u1014\u103A\u1037\u1016\u102D\u102F\u1038 \u2014 "
     + mmN(state.amount) + " \u1000\u103B\u1015\u103A (" + mmWords(state.amount) + ") \uD83D\uDC97";
