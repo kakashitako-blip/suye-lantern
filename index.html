@@ -123,14 +123,20 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
   padding-inline:max(16px,env(safe-area-inset-left,0px));
 }
 #hint.show{opacity:.95}
+/* Shrink to fit, centred, on its own dark plate. Text with only a shadow
+   disappears the moment the scene behind it is lit grass. */
 #sub{
   position:fixed;z-index:7;left:0;right:0;
   bottom:calc(132px + env(safe-area-inset-bottom,0px));
+  width:fit-content;max-width:min(88vw,680px);margin-inline:auto;
   text-align:center;pointer-events:none;
-  padding-inline:max(22px,env(safe-area-inset-left,0px));
+  padding:8px 20px;border-radius:17px;
+  background:rgba(26,7,21,.74);
+  border:1px solid rgba(255,217,233,.16);
+  box-shadow:0 10px 30px -14px rgba(0,0,0,.95);
   font-family:var(--f-display);font-weight:600;
   font-size:clamp(1rem,4.4vw,1.25rem);line-height:1.85;
-  color:var(--blush);text-shadow:0 2px 16px rgba(0,0,0,.95),0 0 30px rgba(255,134,180,.5);
+  color:var(--blush);text-shadow:0 2px 10px rgba(0,0,0,.9);
   opacity:0;transform:translateY(8px);
   transition:opacity .7s ease,transform .7s ease;
 }
@@ -420,7 +426,7 @@ renderer.setPixelRatio(Math.min(MOBILE ? 2 : 2.5, window.devicePixelRatio || 1))
 renderer.setSize(innerWidth, innerHeight);
 renderer.outputEncoding = THREE.sRGBEncoding;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 0.86;
+renderer.toneMappingExposure = 0.78;
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = MOBILE ? THREE.PCFShadowMap : THREE.PCFSoftShadowMap;
 document.body.appendChild(renderer.domElement);
@@ -485,7 +491,7 @@ composer.setSize(innerWidth, innerHeight);
    entirely by its own candles. */
 var hemi = new THREE.HemisphereLight(0x3550a0, 0x15101f, 0.06);
 scene.add(hemi);
-var moonLight = new THREE.DirectionalLight(0xb9ccff, 0.22);
+var moonLight = new THREE.DirectionalLight(0xb9ccff, 0.30);
 moonLight.position.set(-44, 66, 26);
 moonLight.castShadow = true;
 moonLight.shadow.mapSize.set(MOBILE ? 2048 : 4096, MOBILE ? 2048 : 4096);
@@ -1184,8 +1190,11 @@ player.position.set(0, 0, 8);
 scene.add(player);
 var pShadow = blobShadow(1.8); scene.add(pShadow);
 
-/* with the night this dark, the candle in her hand is what lights her way */
-var candleLight = new THREE.PointLight(0xffa94a, 2.7, 17, 2);
+/* With the night this dark, the candle in her hand is what lights her way.
+   The intensity lives here because the flicker in tick() rewrites it every
+   frame - setting it on the constructor alone did nothing at all. */
+var CANDLE_I = 1.3;
+var candleLight = new THREE.PointLight(0xffa94a, CANDLE_I, 21, 2);
 candleLight.position.set(0, 1.5, 0);
 scene.add(candleLight);
 
@@ -1226,17 +1235,17 @@ TRUNKS.push({ x:ARCH.x+4, z:ARCH.z, r:0.5 });
 var rockObj = new THREE.Object3D();
 rockObj.position.set(ROCK.x, 0, ROCK.z);
 var drifters = [];
-var hemiTarget = 0.14;
+var hemiTarget = 0.21;
 
 /* ============================ stations ============================ */
 /* order: nyaung pin -> river -> pagoda -> Gintoki -> home (home lights the village) */
 var STATIONS = [
   { key:"tree",    name:"\u100A\u1031\u102C\u1004\u103A\u1015\u1004\u103A",
-    light: function(){ treeLanterns.forEach(lightLantern); hemiTarget = 0.12; } },
+    light: function(){ treeLanterns.forEach(lightLantern); hemiTarget = 0.18; } },
   { key:"creek",   name:"\u1001\u103B\u1031\u102C\u1004\u103A\u1038\u1014\u102C\u1038\u1000 \u1000\u103B\u1031\u102C\u1000\u103A\u1010\u102F\u1036\u1038",
-    light: function(){ spawnDrifters(); hemiTarget = 0.14; } },
+    light: function(){ spawnDrifters(); hemiTarget = 0.17; } },
   { key:"pagoda",  name:"\u1018\u102F\u101B\u102C\u1038",
-    light: function(){ pagLamps.forEach(litFlame(1.1, 0.24)); hemiTarget = 0.15; } },
+    light: function(){ pagLamps.forEach(litFlame(1.1, 0.24)); hemiTarget = 0.20; } },
   { key:"gintoki", name:"Gintoki", locked: true,
     light: function(){
       archLanterns.forEach(lightLantern);
@@ -1384,10 +1393,10 @@ function villageAblaze(){
   LANTERNS.forEach(function(l){ if(!l.userData.lit) lightLantern(l); });
   /* the village reads as lit because its lanterns are lit, not because the
      exposure is cranked; that is what washed the whole scene out before */
-  hemiTarget = 0.16;
-  moonLight.intensity = 0.26;
+  hemiTarget = 0.21;
+  moonLight.intensity = 0.31;
   bloom.strength = (MOBILE ? 0.30 : 0.40) * 1.12;
-  renderer.toneMappingExposure = 0.88;
+  renderer.toneMappingExposure = 0.75;
 }
 
 /* ============================ the four sequences ============================ */
@@ -1416,7 +1425,7 @@ function hangLantern(k){
       } },
     sDo(function(){
       lightLantern(L);
-      brightenPlace("tree", TREE.x, 2.5, TREE.z, 1.3, 3.6, 17);
+      brightenPlace("tree", TREE.x, 3.2, TREE.z, 0.7, 2.0, 22);
     }),
     sWait(0.4),
     sArm(-0.25, 0.45)
@@ -1464,11 +1473,11 @@ function boatLaunch(i){
     sDo(function(){
       sx = player.position.x;
       if(!riverGlow){
-        riverGlow = new THREE.PointLight(0xffb066, 0, 9, 2);
+        riverGlow = new THREE.PointLight(0xffb066, 0, 15, 2);
         scene.add(riverGlow);
       }
       riverGlow.position.set(RIV.x0 + 1.4, 0.8, player.position.z + 0.2);
-      riverGlow.intensity = Math.min(2.0, riverGlow.intensity + 0.55);
+      riverGlow.intensity = Math.min(1.7, riverGlow.intensity + 0.45);
       boat = new THREE.Group();
       boat.add(px(.7,.12,.7, 0x3f7a2d));
       var f = makeFlame(1.0); f.position.y = .2; boat.add(f);
@@ -1532,7 +1541,7 @@ function seqPagoda(fin){
       steps.push(sArm(-0.85, 0.42));
       steps.push(sDo(function(){
         if(pagLamps[k]) litFlame(1.1, 0.24)(pagLamps[k]);
-        brightenPlace("pagoda", PAG.x - 4 + k*2, 1.5, PAG.z + 3.0, 0.85, 3.4, 15);
+        brightenPlace("pagoda", PAG.x - 4 + k*2, 2.2, PAG.z + 3.0, 0.42, 2.0, 21);
       }));
       steps.push(sWait(0.32));
       steps.push(sArm(-0.1, 0.34));
@@ -1559,18 +1568,26 @@ function seqFinale(fin){
     sFace(gintoki.position.x, gintoki.position.z),
     sCam(-1.45, 7.2, 3.0, 1.8),
     sStagger(archLanterns, 1.2, lightLantern),
-    sDo(function(){ brightenPlace("arch", ARCH.x, 4.2, ARCH.z, 3.0, 3.0, 24); }),
+    sDo(function(){ brightenPlace("arch", ARCH.x, 5.6, ARCH.z, 1.5, 1.5, 34); }),
     sWait(0.5),
     sSay("\u1014\u103E\u1005\u103A\u101A\u1031\u102C\u1000\u103A\u101E\u102C\u1038 \u1019\u102E\u1038\u1015\u102F\u1036\u1038\u1000\u102D\u102F \u101C\u1031\u1011\u1032 \u101C\u103D\u103E\u1010\u103A\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
-    sCam(Math.PI - 0.45, 9.0, 3.2, 1.9),
+    /* She steps in beside him and both turn out, instead of standing face to
+       face down the z axis - that way round, whichever side the camera takes,
+       one of them is behind the other and the lantern ends up behind a head.
+       Shoulder to shoulder, the camera comes from straight in front, the arch
+       posts fall either side of frame, and the lantern rises between them. */
+    sWalk(gintoki.position.x - 1.25, gintoki.position.z + 0.15, 1.3),
+    sFace(gintoki.position.x - 1.25, gintoki.position.z + 9),
+    sCam(Math.PI, 7.0, 2.85, 1.95),
     sDo(function(){
-      /* the two of them hold it between them, and the shot centres on that point */
       big = gintokiLantern;
       scene.add(big);
       var mx = (player.position.x + gintoki.position.x)/2;
       var mz = (player.position.z + gintoki.position.z)/2;
-      big.position.set(mx, 1.45, mz);
-      big.scale.setScalar(1.5);
+      /* down at their hands and small, so it does not stand in front of them;
+         it grows as it climbs past their heads */
+      big.position.set(mx, 1.28, mz + 0.3);
+      big.scale.setScalar(1.2);
       if(camFocus) camFocus.at = new THREE.Vector3(mx, 0, mz);
     }),
     { dur:0.9, update:function(p){
@@ -1581,9 +1598,9 @@ function seqFinale(fin){
     /* up slowly, the shot tilting just enough to keep them both in frame */
     { dur:4.6, update:function(p){
         var e = ease(p);
-        big.position.y = 1.45 + 6.6*e;
-        big.scale.setScalar(1.5 + 0.5*e);
-        if(camFocus) camFocus.look = 1.9 + 2.4*e;
+        big.position.y = 1.28 + 7.0*e;
+        big.scale.setScalar(1.2 + 0.75*e);
+        if(camFocus) camFocus.look = 2.0 + 2.8*e;
         big.userData.halo.material.opacity = 0.5*(1 - e*0.25); } },
     { dur:0.8, update:function(p){
         gintoki.userData.armR.rotation.x = -1.5 + 1.0*ease(p);
@@ -1592,14 +1609,14 @@ function seqFinale(fin){
       risingLantern = big;
       /* now it is up above them it becomes the key light for the kiss; the
          falloff is the legacy one, I*(1 - d/distance)^decay */
-      big.add(new THREE.PointLight(0xffc089, 7.5, 34, 2));
+      big.add(new THREE.PointLight(0xffc089, 2.4, 42, 2));
     }),
 
     /* The kiss, side on, far enough back to hold them both. The arch posts sit
        at x = ARCH.x +/- 4 on z = ARCH.z. Square to the side is the one angle
        that throws both of them clear: the near post falls outside the frame
        and the far one lands out by the edge rather than between their heads. */
-    sCam(-Math.PI/2, 5.0, 1.85, 1.78),
+    sCam(-Math.PI/2, 6.2, 2.0, 1.70),
     sTap("\u1021\u102C\u1018\u103D\u102C\u1038\u1015\u1031\u1038\u1019\u101A\u103A"),
     sSay("\uD83D\uDC97"),
     sWalk(gintoki.position.x - 0.05, gintoki.position.z + 1.0, 1.1),
@@ -1641,17 +1658,27 @@ function seqFinale(fin){
 
     /* the present */
     sSay("Gintoki \u1000 \u101e\u102e\u1010\u1004\u103a\u1038\u1000\u103b\u103d\u1010\u103a \u1019\u102f\u1014\u103a\u1037\u1016\u102d\u102f\u1038 \u1015\u1031\u1038\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
-    sCam(-1.55, 3.8, 2.1, 1.6),
+    /* back to shoulder to shoulder, and the camera square in front, the same
+       staging the lantern release uses. The old shot sat 1.3m from an arch
+       post with her back to the lens and the box hidden behind her, over
+       grass close enough to the lamps to read almost white. */
+    sWalk(gintoki.position.x - 1.25, gintoki.position.z + 0.15, 1.1),
+    sFace(gintoki.position.x - 1.25, gintoki.position.z + 9),
+    sCam(Math.PI, 6.0, 2.45, 1.65),
     sDo(function(){
       box = presentBox();
       hx = gintoki.position.x; hz = gintoki.position.z;
-      box.position.set(hx, 1.25, hz + 0.45);
+      box.position.set(hx, 1.25, hz + 0.55);
       scene.add(box);
+      if(camFocus) camFocus.at = new THREE.Vector3(
+        (player.position.x + gintoki.position.x)/2, 0,
+        (player.position.z + gintoki.position.z)/2);
     }),
     { dur:1.1, update:function(p){
         var e = ease(p);
+        /* it crosses to her and stays on the camera side of her, not behind */
         box.position.x = hx + (player.position.x - hx)*e;
-        box.position.z = (hz + 0.45) + ((player.position.z - 0.45) - hz - 0.45)*e;
+        box.position.z = (hz + 0.55) + ((player.position.z + 0.55) - (hz + 0.55))*e;
         box.position.y = 1.25 + Math.sin(p*Math.PI)*0.25;
         box.rotation.y = e*1.2; } },
     sWait(0.7),
@@ -1666,7 +1693,7 @@ function seqFinale(fin){
         box.userData.lid.rotation.z = e*2.4;
         box.userData.bow.position.y = 0.36 + 1.5*e; } },
     sDo(function(){
-      heartBurst(new THREE.Vector3(box.position.x, box.position.y + 0.6, box.position.z), 22);
+      heartBurst(new THREE.Vector3(box.position.x, box.position.y + 0.55, box.position.z), 22);
       chime(PRIZE_CHIME);
     }),
     sArm(0, 0.4),
@@ -1696,8 +1723,8 @@ STATIONS.forEach(function(st, i){
 
 /* with the ambient down, these carry the scene - warm pools with real falloff */
 var LAMP_Y = [3.4, 1.1, 3.2, 4.4];
-var LAMP_I = [1.9, 1.7, 2.6, 2.1];
-var LAMP_D = [22, 20, 32, 25];
+var LAMP_I = [1.25, 1.15, 1.6, 1.35];
+var LAMP_D = [30, 27, 42, 34];
 function addStationLight(i){
   var p = STATION_POS[i];
   var L = new THREE.PointLight(0xffa755, LAMP_I[i], LAMP_D[i], 2);
@@ -2162,7 +2189,12 @@ function tick(){
   ud.armR.rotation.z = -0.12;
 
   pShadow.position.set(player.position.x, 0.02, player.position.z);
-  candleLight.position.set(player.position.x, 1.9, player.position.z);
+  /* out at the lantern she is carrying, not at her centre: a light inside her
+     lights nothing of her, which is why her face kept coming out dark */
+  var _ch = player.rotation.y;
+  candleLight.position.set(
+    player.position.x + Math.sin(_ch)*0.6, 1.55,
+    player.position.z + Math.cos(_ch)*0.6);
 
   /* gintoki waits, shifting his weight */
   gintoki.userData.body.position.y = Math.sin(t*1.3)*0.02;
@@ -2176,7 +2208,7 @@ function tick(){
     fl.userData.halo.scale.set(bs*k, bs*k, 1);
     fl.userData.core.scale.set(1, 1.8*k, 1);
   }
-  candleLight.intensity = 1.15 + Math.sin(t*8.1)*0.12;
+  candleLight.intensity = CANDLE_I + Math.sin(t*8.1)*0.1;
   hemi.intensity += (hemiTarget - hemi.intensity) * Math.min(1, dt*0.8);
 
   /* ---- blossom + water ---- */
