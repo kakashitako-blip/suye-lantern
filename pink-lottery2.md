@@ -85,9 +85,16 @@ The house is scenery, not a stop — four stops in total.
 
 **Wording:** the gift is always သီတင်းကျွတ် မုန့်ဖိုး, never "present" or လက်ဆောင်.
 
-**The draw happens last.** Opening the box ends the scene and shows `#pick` — five
-lanterns. Tapping one calls `drawPrize()`, saves, fires `skyPrize()`, then the panel. If she
-reloads after finishing the walk but before picking, the start button reopens the picker.
+**The draw happens last, and it is hers to trigger.** The finale pauses twice on `sTap`
+gates — the glowing button shows အာဘွားပေးမယ်, then ဖွင့်မယ် — and nothing advances until she taps.
+Opening the box shows `#pick`: five lanterns. Tapping one draws **all five** amounts, saves
+the whole pool, and the same panel becomes the result — her number big, then every lantern
+listed with hers highlighted, so she can see what she missed. The pool is stored, so a reload
+shows the same five rather than re-rolling. There is no number in the sky; that was removed.
+
+**Camera colliders use canopy width, not trunk width.** A sakura canopy is 3-4 blocks across
+while the trunk is one, so trunk-sized colliders let trees hide her completely — it happened
+at the pagoda. Trees push `r: 2.1-3.4`, and the pagoda keeps a 22-block tree exclusion.
 
 **No modal cards.** Clicking the button plays a scripted scene — she walks, kneels, reaches,
 bows — with one line of Burmese subtitle fading in at each beat. Scenes run 7-13 s.

@@ -220,6 +220,24 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 .pkgrid.done .pk:not(.chosen){opacity:.16;filter:saturate(.25) blur(1px);transform:scale(.86)}
 .pk.chosen{animation:none;transform:translateY(-5px) scale(1.14);z-index:2}
 .pk.chosen span{color:transparent;box-shadow:0 0 46px 2px rgba(255,195,225,.95),inset 0 -10px 14px -10px rgba(43,13,34,.5)}
+.pkresult{display:flex;flex-direction:column;gap:12px;align-items:center;width:100%;
+  animation:rise .55s cubic-bezier(.2,.9,.25,1) both}
+.pklist{list-style:none;margin:0;padding:0;width:100%;display:flex;flex-direction:column;gap:5px}
+.pkrow{
+  display:flex;align-items:center;justify-content:space-between;gap:10px;
+  padding:7px 15px;border-radius:12px;
+  border:1px solid rgba(255,160,198,.13);
+  color:var(--muted);font-size:.92rem;line-height:1.75;
+}
+.pkrow .n{font-family:var(--f-display);opacity:.6}
+.pkrow .v{font-family:var(--f-display);font-variant-numeric:tabular-nums}
+.pkrow.mine{
+  border-color:var(--line);
+  background:linear-gradient(170deg,rgba(255,217,233,.17),rgba(191,63,118,.13));
+  color:var(--blush);
+}
+.pkrow.mine .n{opacity:1;color:var(--gold)}
+.pkrow.mine .v{font-weight:700;color:var(--blush)}
 .sheet .found{
   font-family:var(--f-display);font-weight:700;color:var(--gold);
   font-size:1.15rem;line-height:1.8;margin:0;
@@ -281,24 +299,17 @@ a{color:var(--blush)}
 <!-- choose a lantern -->
 <div class="veil" id="pick" hidden>
   <div class="sheet panel">
-    <p class="eyebrow">မုန့်ဖိုးထုပ် ဖွင့်လိုက်တော့</p>
-    <h2>မီးပုံးတစ်လုံး ရွေးပါ</h2>
-    <p class="sub">ရွေးလိုက်တဲ့ မီးပုံးထဲက ပေါက်တာ နင့်ဟာပဲ။</p>
+    <p class="eyebrow" id="pkEyebrow">မုန့်ဖိုးထုပ် ဖွင့်လိုက်တော့</p>
+    <h2 id="pkTitle">မီးပုံးတစ်လုံး ရွေးပါ</h2>
     <div class="pkgrid" id="pkgrid"></div>
-  </div>
-</div>
-
-<!-- prize -->
-<div class="veil" id="prize" hidden>
-  <div class="sheet panel">
-    <p class="eyebrow">ရွာတစ်ရွာလုံး လင်းသွားပြီ</p>
-    <h2 id="prizeTitle">နောက်ဆုံး မီးပုံး</h2>
-    <p id="prizeText"></p>
-    <p class="amount"><span id="num">၀</span><span class="unit">ကျပ်</span></p>
-    <p class="words" id="words"></p>
-    <p class="sub" id="prizeNote"></p>
-    <button class="btn" id="copyBtn" type="button">ကော်ပီကူးယူ</button>
-    <p class="locked" id="locked"></p>
+    <div class="pkresult" id="pkResult" hidden>
+      <p class="amount"><span id="num">၀</span><span class="unit">ကျပ်</span></p>
+      <p class="words" id="words"></p>
+      <p class="sub" id="pkElse">တခြားမီးပုံးတွေမှာ</p>
+      <ul class="pklist" id="pklist"></ul>
+      <button class="btn" id="copyBtn" type="button">ကော်ပီကူးယူ</button>
+      <p class="locked" id="locked"></p>
+    </div>
   </div>
 </div>
 
@@ -648,14 +659,14 @@ function canopy(list, cx, cy, cz, rad, cols, hang){
   }
 }
 function sakuraTree(x, z, scale){
-  TRUNKS.push({ x:x, z:z, r:0.75 });
+  TRUNKS.push({ x:x, z:z, r:2.4 });   /* canopy width, not trunk */
   var h = Math.round((5 + Math.random()*3) * (scale||1));
   for(var y=0;y<h;y++) box(SOLID, x, y+0.5, z, 1, vary(C.wood, 14));
   canopy(SOLID, x, h+1.4, z, Math.round(3 + Math.random()*1.4),
          [C.sakura, C.sakuraD, C.sakuraL], true);
 }
 function greenTree(x, z){
-  TRUNKS.push({ x:x, z:z, r:0.7 });
+  TRUNKS.push({ x:x, z:z, r:2.1 });
   var h = 4 + (Math.random()*3|0);
   for(var y=0;y<h;y++) box(SOLID, x, y+0.5, z, 1, vary(C.wood, 12));
   canopy(SOLID, x, h+1.2, z, 3, [C.leaf, C.leafD], false);
@@ -678,7 +689,7 @@ function bambooClump(x, z){
     if(isWater(x,z) || distToPath(x,z) < 6.5) continue;
     var clash = false;
     for(k=0;k<STATION_POS.length;k++){
-      if(Math.hypot(x-STATION_POS[k].x, z-STATION_POS[k].z) < 12) clash = true;
+      if(Math.hypot(x-STATION_POS[k].x, z-STATION_POS[k].z) < (k===2 ? 22 : 15)) clash = true;
     }
     for(k=0;k<placed.length;k++){
       if(Math.hypot(x-placed[k][0], z-placed[k][1]) < 7) clash = true;
@@ -846,7 +857,7 @@ treeLanterns = [[-2.5,6,1.5],[2.5,6.4,-1.5],[0,5.4,2.6]].map(function(p){
   return lantern(TREE.x+p[0], p[1], TREE.z+p[2], 0.7, false);
 });
 (function bigTree(){
-  TRUNKS.push({ x:TREE.x, z:TREE.z, r:1.2 });
+  TRUNKS.push({ x:TREE.x, z:TREE.z, r:3.4 });
   var h = 9, y;
   for(y=0;y<h;y++){
     box(SOLID, TREE.x, y+0.5, TREE.z, 1.6, vary(C.wood,12), 1);
@@ -1077,13 +1088,14 @@ function updateCut(dt){
   CUT.t += dt;
   var dur = st.dur || 0, p = dur ? Math.min(1, CUT.t/dur) : 1;
   if(st.update) st.update(p);
-  if(CUT.t >= dur){
-    if(st.end) st.end();
-    CUT.i++; CUT.t = 0; CUT.started = false;
-    if(CUT.i >= CUT.steps.length){
-      var d = CUT.done; CUT = null; cutWalk = false; camFocus = null;
-      if(d) d();
-    }
+  var finished = st.gate ? st.passed : (CUT.t >= dur);
+  if(!finished) return;
+  if(st.gate){ gateStep = null; actEl.classList.remove("show"); }
+  if(st.end) st.end();
+  CUT.i++; CUT.t = 0; CUT.started = false;
+  if(CUT.i >= CUT.steps.length){
+    var d = CUT.done; CUT = null; cutWalk = false; camFocus = null;
+    if(d) d();
   }
 }
 
@@ -1118,6 +1130,19 @@ function tween(get, set, to, d){
 function sArm(to, d){ return tween(function(){return armRaise;}, function(v){armRaise=v;}, to, d); }
 function sKneel(to, d){ return tween(function(){return kneelAmt;}, function(v){kneelAmt=v;}, to, d); }
 function sBow(to, d){ return tween(function(){return bowAmt;}, function(v){bowAmt=v;}, to, d); }
+var gateStep = null;
+function sTap(label){
+  var step = {
+    dur: 0, gate: true, passed: false,
+    start: function(){
+      step.passed = false;
+      gateStep = step;
+      actEl.textContent = label;
+      actEl.classList.add("show");
+    }
+  };
+  return step;
+}
 function sCam(yaw, dist, h, look){ return { dur:0, start:function(){ camFocus = {yaw:yaw, dist:dist, h:h, look:look}; } }; }
 function sCamOff(){ return { dur:0, start:function(){ camFocus = null; } }; }
 function sStagger(list, d, fn){
@@ -1305,8 +1330,9 @@ function seqFinale(fin){
         armRaise = -1.1*(1 - ease(p)); } },
 
     /* the kiss */
-    sSay("Gintoki \u1000\u102D\u102F \u1021\u102C\u1018\u103D\u102C\u1038\u1015\u1031\u1038\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A \uD83D\uDC97"),
     sCam(-1.55, 3.4, 2.0, 1.65),
+    sTap("\u1021\u102C\u1018\u103D\u102C\u1038\u1015\u1031\u1038\u1019\u101A\u103A"),
+    sSay("\uD83D\uDC97"),
     sWalk(gintoki.position.x - 0.05, gintoki.position.z + 1.0, 1.1),
     { dur:0.7, update:function(p){
         var e = ease(p);
@@ -1347,7 +1373,8 @@ function seqFinale(fin){
     sWait(0.7),
 
     /* she opens it */
-    sSay("\u1016\u103D\u1004\u103A\u1037\u1000\u103C\u100A\u103A\u1037\u101C\u102D\u102F\u1000\u103A\u1010\u1031\u102C\u1037..."),
+    sHush(),
+    sTap("\u1016\u103D\u1004\u103A\u1037\u1019\u101A\u103A"),
     sArm(-0.9, 0.5),
     { dur:1.0, update:function(p){
         var e = ease(p);
@@ -1456,7 +1483,7 @@ var BLOCKERS = [
 ];
 
 /* ============================ state ============================ */
-var state = { found: {}, amount: 0 };
+var state = { found: {}, amount: 0, pool: null, pick: 0 };
 try{
   var raw = localStorage.getItem(SAVE_KEY);
   if(raw){
@@ -1464,6 +1491,10 @@ try{
     if(s && typeof s === "object"){
       state.found = s.found || {};
       state.amount = (typeof s.amount === "number" && s.amount >= MINP && s.amount <= MAXP) ? s.amount : 0;
+      if(Object.prototype.toString.call(s.pool) === "[object Array]" && s.pool.length === 5){
+        state.pool = s.pool;
+        state.pick = (typeof s.pick === "number") ? s.pick : 0;
+      }
     }
   }
 }catch(e){}
@@ -1472,7 +1503,7 @@ function save(){
 }
 if(location.hash === "#reset"){
   try{ localStorage.removeItem(SAVE_KEY); }catch(e){}
-  state = { found: {}, amount: 0 };
+  state = { found: {}, amount: 0, pool: null, pick: 0 };
 }
 function countFound(){
   var n = 0;
@@ -1837,66 +1868,25 @@ var MUSIC = (function(){
 var FIND_CHIME  = [[784,0],[1046.5,0.12]];
 var PRIZE_CHIME = [[784,0],[1046.5,0.14],[1318.5,0.3],[1568,0.46]];
 
-/* ============================ finale ============================ */
-var prizeEl = $("prize"), numEl = $("num"), wordsEl = $("words"), lockedEl = $("locked");
-var FINALE_TEXT = "ရွာတစ်ရွာလုံး မီးတွေနဲ့ လင်းနေပြီ။ ကောင်းကင်ထဲက နင့် သီတင်းကျွတ် မုန့်ဖိုးပါ။";
-
-/* the amount arrives over the village rather than in a box */
-function skyPrize(amount){
-  var W = 1200, H = 420;
-  var c = document.createElement("canvas"); c.width = W; c.height = H;
-  var g = c.getContext("2d");
-  g.textAlign = "center"; g.textBaseline = "middle";
-  g.font = '700 200px "Noto Serif Myanmar", Georgia, serif';
-  g.lineJoin = "round";
-  g.shadowColor = "rgba(255,170,70,1)"; g.shadowBlur = 70;
-  g.strokeStyle = "rgba(42,12,30,.92)"; g.lineWidth = 22;
-  g.strokeText(mmN(amount), W/2, H/2 - 30);
-  g.shadowBlur = 30;
-  g.fillStyle = "#fff6e0";
-  g.fillText(mmN(amount), W/2, H/2 - 30);
-  g.font = '700 74px "Padauk", sans-serif';
-  g.shadowBlur = 0;
-  g.strokeStyle = "rgba(42,12,30,.92)"; g.lineWidth = 11;
-  g.strokeText("\u1000\u103B\u1015\u103A", W/2, H/2 + 132);
-  g.fillStyle = "#ffd9a0";
-  g.fillText("\u1000\u103B\u1015\u103A", W/2, H/2 + 132);
-  var sp = new THREE.Sprite(new THREE.SpriteMaterial({
-    map: new THREE.CanvasTexture(c), transparent:true,
-    depthWrite:false, depthTest:false, fog:false, opacity:0
-  }));
-  sp.position.set(0, 4.0, -16);
-  camera.add(sp);
-  skySprite = sp;
-  var t0 = performance.now();
-  (function rise(now){
-    var k = Math.min(1, (now - t0)/2600), e = 1 - Math.pow(1-k, 3);
-    sp.material.opacity = Math.min(1, k*2.0);
-    sp.position.y = 4.0 + 1.5*e;
-    var sc = 0.5 + 0.5*e;
-    sp.scale.set(7.6*sc, 2.66*sc, 1);
-    if(k < 1) requestAnimationFrame(rise);
-  })(t0);
-}
-var skySprite = null;
-
-function settle(a){
-  numEl.textContent = mmN(a);
-  wordsEl.textContent = mmWords(a);
-  lockedEl.textContent = "သတ်မှတ်ပြီးသွားပြီ — ဒီလင့်ကို ပြန်ဖွင့်လည်း "
-    + mmN(a) + " ကျပ်ပဲ ဖြစ်မယ်။";
-}
+/* ============================ the draw ============================ */
+var pickEl = $("pick"), pkGrid = $("pkgrid"), pkResult = $("pkResult"), pkList = $("pklist");
+var numEl = $("num"), wordsEl = $("words"), lockedEl = $("locked");
 var FINALE_CAM = { yaw: Math.PI - 1.15, dist: 11, h: 6.2, look: 2.9 };
-var pickEl = $("pick"), pkGrid = $("pkgrid"), picked = false;
+var picked = false;
 
-function showPicker(){
+function buildPicker(){
   picked = false;
   pkGrid.innerHTML = "";
   pkGrid.classList.remove("done");
+  pkGrid.hidden = false;
+  pkResult.hidden = true;
+  $("pkEyebrow").textContent = "\u1019\u102F\u1014\u103A\u1037\u1016\u102D\u102F\u1038\u1011\u102F\u1015\u103A \u1016\u103D\u1004\u103A\u1037\u101C\u102D\u102F\u1000\u103A\u1010\u1031\u102C\u1037";
+  $("pkTitle").textContent = "\u1019\u102E\u1038\u1015\u102F\u1036\u1038\u1010\u1005\u103A\u101C\u102F\u1036\u1038 \u101B\u103D\u1031\u1038\u1015\u102B";
   for(var i=0;i<5;i++){
     var b = document.createElement("button");
     b.type = "button";
     b.className = "pk";
+    b.dataset.n = i;
     b.setAttribute("aria-label", "\u1019\u102E\u1038\u1015\u102F\u1036\u1038 " + mmD(i+1));
     b.innerHTML = '<i></i><span>' + mmD(i+1) + '</span>';
     pkGrid.appendChild(b);
@@ -1905,55 +1895,68 @@ function showPicker(){
   pickEl.classList.remove("fading");
 }
 
+function revealResult(pool, idx){
+  var a = pool ? pool[idx] : state.amount;
+  $("pkEyebrow").textContent = "\u101E\u102E\u1010\u1004\u103A\u1038\u1000\u103B\u103D\u1010\u103A \u1019\u102F\u1014\u103A\u1037\u1016\u102D\u102F\u1038";
+  $("pkTitle").textContent = "\u1002\u102F\u100F\u103A\u101A\u1030\u1015\u102B\u1010\u101A\u103A Suye \u101B\u1031 \uD83D\uDC97";
+  numEl.textContent = mmN(a);
+  wordsEl.textContent = mmWords(a);
+  lockedEl.textContent = "\u1012\u102E\u101C\u1004\u103A\u1037\u1000\u102D\u102F \u1015\u103C\u1014\u103A\u1016\u103D\u1004\u103A\u1037\u101C\u100A\u103A\u1038 " + mmN(a) + " \u1000\u103B\u1015\u103A\u1015\u1032\u104B";
+  pkList.innerHTML = "";
+  var showList = !!(pool && pool.length);
+  $("pkElse").hidden = !showList;
+  if(showList){
+    for(var i=0;i<pool.length;i++){
+      var li = document.createElement("li");
+      li.className = "pkrow" + (i === idx ? " mine" : "");
+      li.innerHTML = '<span class="n">' + mmD(i+1) + '</span><span class="v">' + mmN(pool[i]) + '</span>';
+      pkList.appendChild(li);
+    }
+  }
+  pkGrid.hidden = true;
+  pkResult.hidden = false;
+  if(!pkResult.querySelector(".btn.ghost")) pkResult.appendChild(backBtn);
+  pickEl.hidden = false;
+  pickEl.classList.remove("fading");
+}
+
 pkGrid.addEventListener("click", function(ev){
   var b = ev.target.closest(".pk");
   if(!b || picked) return;
   picked = true;
+  var idx = +b.dataset.n;
   b.classList.add("chosen");
   pkGrid.classList.add("done");
   chime(FIND_CHIME);
-  var amount = drawPrize();
-  state.amount = amount;
+  var pool = [];
+  for(var i=0;i<5;i++) pool.push(drawPrize());
+  state.pool = pool;
+  state.pick = idx;
+  state.amount = pool[idx];
   save();
   setTimeout(function(){
-    pickEl.classList.add("fading");
-    setTimeout(function(){
-      pickEl.hidden = true;
-      skyPrize(amount);
-      chime(PRIZE_CHIME);
-      setTimeout(function(){ showPrize(); }, 3200);
-    }, 620);
-  }, 1200);
+    chime(PRIZE_CHIME);
+    revealResult(pool, idx);
+  }, 1500);
 });
 
 var backBtn = document.createElement("button");
 backBtn.type = "button";
 backBtn.className = "btn ghost";
-backBtn.textContent = "ရွာထဲ ပြန်လျှောက်မယ်";
+backBtn.textContent = "\u101B\u103D\u102C\u1011\u1032 \u1015\u103C\u1014\u103A\u101C\u103B\u103E\u1031\u102C\u1000\u103A\u1019\u101A\u103A";
 backBtn.addEventListener("click", function(){
-  if(skySprite){ camera.remove(skySprite); skySprite = null; }
   camFocus = null;
-  prizeEl.classList.add("fading");
-  setTimeout(function(){ prizeEl.hidden = true; paused = false; }, REDUCED ? 0 : 560);
+  pickEl.classList.add("fading");
+  setTimeout(function(){ pickEl.hidden = true; paused = false; }, REDUCED ? 0 : 560);
 });
 
-function showPrize(animate){
-  paused = true;
-  $("prizeText").textContent = FINALE_TEXT;
-  $("prizeNote").textContent = "ဒါ နင့်အတွက်ပဲ။ စခရင်ရှော့ရိုက်ပြီး Gintoki ဆီ ပို့လိုက်။ 💗";
-  prizeEl.hidden = false;
-  prizeEl.classList.remove("fading");
-  if(!prizeEl.querySelector(".btn.ghost")) prizeEl.querySelector(".sheet").appendChild(backBtn);
-  settle(state.amount);
-}
-
 $("copyBtn").addEventListener("click", function(){
-  var txt = "Gintoki ရေ၊ Suye ရဲ့ မီးပုံးခရီး ပြီးသွားပြီ — "
-    + mmN(state.amount) + " ကျပ် (" + mmWords(state.amount) + ") ရတယ် 💗";
+  var txt = "Gintoki \u101B\u1031\u104A Suye \u101B\u1032\u1037 \u101E\u102E\u1010\u1004\u103A\u1038\u1000\u103B\u103D\u1010\u103A \u1019\u102F\u1014\u103A\u1037\u1016\u102D\u102F\u1038 \u2014 "
+    + mmN(state.amount) + " \u1000\u103B\u1015\u103A (" + mmWords(state.amount) + ") \uD83D\uDC97";
   var btn = $("copyBtn");
-  function flash(s){
-    btn.textContent = s;
-    setTimeout(function(){ btn.textContent = "ကော်ပီကူးယူ"; }, 2600);
+  function flash(t){
+    btn.textContent = t;
+    setTimeout(function(){ btn.textContent = "\u1000\u1031\u102C\u103A\u1015\u102E\u1000\u1030\u1038\u101A\u1030"; }, 2600);
   }
   function fallback(){
     try{
@@ -1961,11 +1964,11 @@ $("copyBtn").addEventListener("click", function(){
       r.selectNodeContents(document.querySelector(".amount"));
       var sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
     }catch(e){}
-    flash("ရွေးထားပြီ — ကော်ပီကူးပါ");
+    flash("\u101B\u103D\u1031\u1038\u1011\u102C\u1038\u1015\u103C\u102E \u2014 \u1000\u1031\u102C\u103A\u1015\u102E\u1000\u1030\u1038\u1015\u102B");
   }
   if(navigator.clipboard && navigator.clipboard.writeText){
     navigator.clipboard.writeText(txt).then(function(){
-      flash("ကော်ပီကူးပြီ — ပို့လိုက်");
+      flash("\u1000\u1031\u102C\u103A\u1015\u102E\u1000\u1030\u1038\u1015\u103C\u102E \u2014 \u1015\u102D\u102F\u1037\u101C\u102D\u102F\u1000\u103A");
     }, fallback);
   } else fallback();
 });
@@ -1974,6 +1977,7 @@ $("copyBtn").addEventListener("click", function(){
 var SEQ_FOR = { tree: seqTree, creek: seqCreek, pagoda: seqPagoda };
 
 actEl.addEventListener("click", function(){
+  if(gateStep){ gateStep.passed = true; return; }
   if(!activeStation || paused || CUT) return;
   var st = activeStation;
   activeStation = null;
@@ -1994,7 +1998,7 @@ actEl.addEventListener("click", function(){
   if(st.locked){
     cut(seqFinale(settleStation), function(){
       camFocus = FINALE_CAM;
-      showPicker();
+      buildPicker();
     });
   } else {
     cut(SEQ_FOR[st.key](settleStation), function(){ paused = false; });
@@ -2034,11 +2038,11 @@ $("go").addEventListener("click", function(){
   actEl.hidden = false;
   paused = false;
   MUSIC.start();
-  if(replay){ showPrize(false); }
+  if(replay){ paused = true; camFocus = FINALE_CAM; revealResult(state.pool, state.pick); }
   else if(countFound() >= 4){
     paused = true;
     camFocus = FINALE_CAM;
-    showPicker();
+    buildPicker();
   }
   else {
     hintEl.textContent = "ဘယ်ဘက်မှာ လက်မနဲ့ ဆွဲပြီး လမ်းလျှောက်ပါ";
