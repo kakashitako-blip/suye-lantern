@@ -2019,46 +2019,65 @@ function chime(notes){
 
 /* a slow pentatonic drift, generated rather than downloaded */
 var MUSIC = (function(){
-  var master = null, dry = null, wet = null, lp = null, timer = null, on = true;
-  /* A minor pentatonic, low and open — slow and a little aching rather than twinkly */
-  var SCALE = [220.00, 261.63, 293.66, 329.63, 392.00];
-  var last = -1;
+  var master = null, lp = null, dry = null, wet = null, timer = null, on = true, at = 0;
 
-  /* a plate-ish reverb from a decaying noise burst */
+  /* a warm major loop, arpeggiated on a music-box voice */
+  var CHORDS = [
+    { notes:[523.25, 659.25, 783.99, 1046.50], root:130.81 },
+    { notes:[440.00, 523.25, 659.25,  880.00], root:110.00 },
+    { notes:[349.23, 440.00, 523.25,  698.46], root: 87.31 },
+    { notes:[392.00, 493.88, 587.33,  783.99], root: 98.00 }
+  ];
+
   function makeReverb(ac, seconds, decay){
     var rate = ac.sampleRate, len = Math.max(1, Math.floor(rate*seconds));
     var buf = ac.createBuffer(2, len, rate);
     for(var ch=0; ch<2; ch++){
       var d = buf.getChannelData(ch);
-      for(var i=0;i<len;i++) d[i] = (Math.random()*2 - 1) * Math.pow(1 - i/len, decay);
+      for(var k=0;k<len;k++) d[k] = (Math.random()*2 - 1) * Math.pow(1 - k/len, decay);
     }
     var c = ac.createConvolver(); c.buffer = buf; return c;
   }
 
-  function note(ac, freq, when, dur, gain){
+  /* struck, not swelled: quick attack and a bell tail, with a touch of
+     inharmonic shimmer on top so it reads as a music box */
+  function bell(ac, freq, when, gain){
     var o = ac.createOscillator(), g = ac.createGain();
-    o.type = "triangle";
-    o.frequency.setValueAtTime(freq, when);
+    o.type = "sine"; o.frequency.value = freq;
     g.gain.setValueAtTime(0.0001, when);
-    g.gain.linearRampToValueAtTime(gain, when + 1.1);        /* swells in, never plucks */
+    g.gain.linearRampToValueAtTime(gain, when + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, when + 2.6);
+    o.connect(g); g.connect(lp);
+    o.start(when); o.stop(when + 2.8);
+
+    var o2 = ac.createOscillator(), g2 = ac.createGain();
+    o2.type = "sine"; o2.frequency.value = freq * 2.01;
+    g2.gain.setValueAtTime(0.0001, when);
+    g2.gain.linearRampToValueAtTime(gain * 0.3, when + 0.008);
+    g2.gain.exponentialRampToValueAtTime(0.0001, when + 1.1);
+    o2.connect(g2); g2.connect(lp);
+    o2.start(when); o2.stop(when + 1.3);
+  }
+
+  function pad(ac, freq, when, dur){
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = "triangle"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, when);
+    g.gain.linearRampToValueAtTime(0.032, when + 0.9);
+    g.gain.setValueAtTime(0.032, when + dur - 1.0);
     g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
     o.connect(g); g.connect(lp);
     o.start(when); o.stop(when + dur + 0.3);
   }
 
+  var UPDOWN = [0, 1, 2, 3, 2, 1];
   function step(){
     var ac = audio(); if(!ac || !master) return;
-    var now = ac.currentTime;
-    var i = (Math.random()*SCALE.length)|0;
-    if(i === last) i = (i + 1) % SCALE.length;          /* avoid repeating the same note */
-    last = i;
-    note(ac, SCALE[i], now + 0.05, 7.5 + Math.random()*2.5, 0.055);
-    if(Math.random() < 0.5){
-      /* a shimmer an octave or two up, drifting in behind it */
-      var j = (Math.random()*SCALE.length)|0;
-      note(ac, SCALE[j] * (Math.random() < 0.5 ? 2 : 4),
-           now + 1.4 + Math.random()*1.6, 6.0, 0.022);
-    }
+    var now = ac.currentTime + 0.05;
+    var c = CHORDS[at % CHORDS.length]; at++;
+    for(var i=0;i<UPDOWN.length;i++) bell(ac, c.notes[UPDOWN[i]], now + i*0.38, 0.062);
+    if(Math.random() < 0.55) bell(ac, c.notes[3]*2, now + 1.85 + Math.random()*0.5, 0.022);
+    pad(ac, c.root, now, 2.9);
   }
 
   return {
@@ -2067,49 +2086,29 @@ var MUSIC = (function(){
       if(!ac || master) return;
       try{
         if(ac.state === "suspended") ac.resume();
-
         master = ac.createGain();
-        master.gain.value = on ? 0.5 : 0;
+        master.gain.value = on ? 0.45 : 0;
         master.connect(ac.destination);
 
-        /* soften the top so nothing is brittle */
         lp = ac.createBiquadFilter();
         lp.type = "lowpass";
-        lp.frequency.value = 1400;
-        lp.Q.value = 0.4;
+        lp.frequency.value = 3400;
+        lp.Q.value = 0.3;
 
-        dry = ac.createGain(); dry.gain.value = 0.55;
-        wet = ac.createGain(); wet.gain.value = 0.85;
-        var verb = makeReverb(ac, 4.2, 2.4);
+        dry = ac.createGain(); dry.gain.value = 0.72;
+        wet = ac.createGain(); wet.gain.value = 0.5;
+        var verb = makeReverb(ac, 1.9, 2.2);
         lp.connect(dry); dry.connect(master);
         lp.connect(verb); verb.connect(wet); wet.connect(master);
 
-        /* a low pad underneath, breathing slowly */
-        var padG = ac.createGain(); padG.gain.value = 0.0;
-        padG.connect(master);
-        [110.00, 164.81].forEach(function(f, k){
-          var o = ac.createOscillator(), g = ac.createGain();
-          o.type = k ? "sine" : "triangle";
-          o.frequency.value = f;
-          o.detune.value = k ? 4 : -4;
-          g.gain.value = k ? 0.016 : 0.026;
-          o.connect(g); g.connect(padG); o.start();
-        });
-        var lfo = ac.createOscillator(), lfoG = ac.createGain();
-        lfo.frequency.value = 0.045;                 /* ~22 s swell */
-        lfoG.gain.value = 0.5;
-        lfo.connect(lfoG); lfoG.connect(padG.gain);
-        padG.gain.value = 0.55;
-        lfo.start();
-
         step();
-        timer = setInterval(step, 4300);
+        timer = setInterval(step, 2850);
       }catch(e){}
     },
     toggle: function(){
       on = !on;
       var ac = audio();
-      if(master && ac) master.gain.linearRampToValueAtTime(on ? 0.5 : 0, ac.currentTime + 0.4);
+      if(master && ac) master.gain.linearRampToValueAtTime(on ? 0.45 : 0, ac.currentTime + 0.4);
       return on;
     }
   };
