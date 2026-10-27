@@ -1326,7 +1326,13 @@ function sTap(label){
   };
   return step;
 }
-function sCam(yaw, dist, h, look){ return { dur:0, start:function(){ camFocus = {yaw:yaw, dist:dist, h:h, look:look}; } }; }
+/* hard: an authored wide shot whose line the author has already chosen, so
+   tree avoidance must leave it alone entirely */
+function sCam(yaw, dist, h, look, hard){
+  return { dur:0, start:function(){
+    camFocus = { yaw:yaw, dist:dist, h:h, look:look, hard:!!hard };
+  } };
+}
 function sCamOff(){ return { dur:0, start:function(){ camFocus = null; } }; }
 function sStagger(list, d, fn){
   var n = 0;
@@ -1612,36 +1618,45 @@ function seqFinale(fin){
       big.add(new THREE.PointLight(0xffc089, 2.4, 42, 2));
     }),
 
-    /* The kiss, side on, far enough back to hold them both. The arch posts sit
-       at x = ARCH.x +/- 4 on z = ARCH.z. Square to the side is the one angle
-       that throws both of them clear: the near post falls outside the frame
-       and the far one lands out by the edge rather than between their heads. */
-    sCam(-Math.PI/2, 6.2, 2.0, 1.70),
-    sTap("\u1021\u102C\u1018\u103D\u102C\u1038\u1015\u1031\u1038\u1019\u101A\u103A"),
-    sSay("\uD83D\uDC97"),
-    sWalk(gintoki.position.x - 0.05, gintoki.position.z + 1.0, 1.1),
+    /* The kiss, front on, from where they are already standing. Side on you
+       could not tell what was happening - which is also why the tap went
+       unnoticed. They turn in to each other instead of her walking round. */
+    sCam(Math.PI, 4.8, 2.05, 1.62),
     sDo(function(){
       if(camFocus) camFocus.at = new THREE.Vector3(
         (player.position.x + gintoki.position.x)/2, 0,
         (player.position.z + gintoki.position.z)/2);
     }),
+    sTap("\u1021\u102C\u1018\u103D\u102C\u1038\u1015\u1031\u1038\u1019\u101A\u103A"),
+    sSay("\uD83D\uDC97"),
+    sWalk(gintoki.position.x - 0.78, gintoki.position.z + 0.08, 0.8,
+          gintoki.position.x, gintoki.position.z),
+    { dur:0.45, update:function(p){ gintoki.rotation.y = -1.47*ease(p); } },
     { dur:0.7, update:function(p){
         var e = ease(p);
         bowAmt = 0.3*e;
         gintoki.userData.body.rotation.x = 0.26*e; } },
     sDo(function(){
-      heartBurst(new THREE.Vector3(player.position.x, 1.85, player.position.z - 0.5), 18);
+      heartBurst(new THREE.Vector3(
+        (player.position.x + gintoki.position.x)/2, 2.05,
+        (player.position.z + gintoki.position.z)/2), 18);
       chime([[659,0],[784,0.1],[988,0.22],[1175,0.36]]);
     }),
     sWait(1.5),
     { dur:0.6, update:function(p){
         var e = ease(p);
         bowAmt = 0.3*(1-e);
-        gintoki.userData.body.rotation.x = 0.26*(1-e); } },
+        gintoki.userData.body.rotation.x = 0.26*(1-e);
+        gintoki.rotation.y = -1.47*(1-e); } },
 
     /* the village */
     sSay("\u101B\u103D\u102C\u1010\u1005\u103A\u101B\u103D\u102C\u101C\u102F\u1036\u1038 \u101C\u1004\u103A\u1038\u101E\u103D\u102C\u1038\u1015\u103C\u102E"),
-    sCam(Math.PI - 1.15, 13, 7.0, 3.0),
+    sCam(Math.PI, 15, 7.2, 3.2, true),
+    sDo(function(){
+      if(camFocus) camFocus.at = new THREE.Vector3(
+        (player.position.x + gintoki.position.x)/2, 0,
+        (player.position.z + gintoki.position.z)/2);
+    }),
     sStagger(laneLamps, 2.6, lightLantern),
     sDo(function(){ villageAblaze(); fin(); }),
     sWait(1.2),
@@ -1650,11 +1665,11 @@ function seqFinale(fin){
     /* The shot tilts up to follow them instead of letting them leave the frame,
        and the keepsake is taken partway up: their lantern high in the shot, the
        arch and the two of them underneath, the rest of the village rising. */
-    { dur:2.4, update:function(p){ if(camFocus) camFocus.look = 3.0 + 3.3*ease(p); } },
+    { dur:2.4, update:function(p){ if(camFocus) camFocus.look = 3.2 + 3.6*ease(p); } },
     sDo(function(){ wantSnap = true; }),
-    { dur:2.0, update:function(p){ if(camFocus) camFocus.look = 6.3 + 2.7*ease(p); } },
+    { dur:2.0, update:function(p){ if(camFocus) camFocus.look = 6.8 + 2.6*ease(p); } },
     sWait(1.2),
-    { dur:1.3, update:function(p){ if(camFocus) camFocus.look = 9.0 - 6.0*ease(p); } },
+    { dur:1.3, update:function(p){ if(camFocus) camFocus.look = 9.4 - 6.2*ease(p); } },
 
     /* the present */
     sSay("Gintoki \u1000 \u101e\u102e\u1010\u1004\u103a\u1038\u1000\u103b\u103d\u1010\u103a \u1019\u102f\u1014\u103a\u1037\u1016\u102d\u102f\u1038 \u1015\u1031\u1038\u101C\u102D\u102F\u1000\u103A\u1010\u101A\u103A"),
@@ -2220,9 +2235,13 @@ function tick(){
   /* ---- floating candles drift downstream ---- */
   for(var i=0;i<drifters.length;i++){
     var d = drifters[i];
-    d.position.z += dt * 0.06;
-    d.position.x += Math.sin(t*0.7 + i)*dt*0.10;
-    d.rotation.y += dt*0.5;
+    /* a real current: she sets one down and it goes, which is the whole point
+       of floating a candle. It was crawling at 0.06 only to keep them inside
+       a narrow frame. */
+    d.position.z += dt * 0.30;
+    d.position.x += Math.sin(t*0.7 + i)*dt*0.16;
+    d.position.y = 0.34 + Math.sin(t*1.25 + i*1.7)*0.022;
+    d.rotation.y += dt*0.33;
     if(d.position.z > rockObj.position.z + 20) d.position.z = rockObj.position.z - 22;
   }
 
@@ -2277,12 +2296,18 @@ function tick(){
   var fx = player.position.x, fz = player.position.z;
   if(camFocus && camFocus.at){ fx = camFocus.at.x; fz = camFocus.at.z; }
   var sx = -Math.sin(camYaw), sz = -Math.cos(camYaw), want = cDist;
+  /* A tree may pull the camera in, but during an authored shot it may not
+     collapse it: a 13 unit shot yanked to 2 while looking at head height 6
+     points the camera almost straight up, which is how the keepsake came out
+     as empty sky. Free roam can still close right in. */
+  var minWant = camFocus ? cDist*0.62 : 2.0;
+  if(camFocus && camFocus.hard) minWant = cDist;
   for(var ci=0; ci<TRUNKS.length; ci++){
     var TK = TRUNKS[ci];
     var tdx = TK.x - fx, tdz = TK.z - fz;
     var along = tdx*sx + tdz*sz;
     if(along < 0.3 || along > want) continue;
-    if(Math.abs(tdx*sz - tdz*sx) < TK.r + 0.5) want = Math.max(2.0, along - TK.r - 0.5);
+    if(Math.abs(tdx*sz - tdz*sx) < TK.r + 0.5) want = Math.max(minWant, along - TK.r - 0.5);
   }
   tmp.set(
     fx + sx*want,
