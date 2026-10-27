@@ -108,6 +108,12 @@ waits, tail wagging. During a cutscene it parks perpendicular to the camera axis
 version targeted "beside her", which is exactly where the close-up camera sits, so it filled
 the frame.
 
+**The ground is one flat plane at y = 0, so nothing in the river can sit below it.** The water
+surface is at **y = 0.30** and everything that floats (lily pads, lotus, candle boats) sits at
+~0.34; fish swim at ~0.10, under the surface and visible through it. Anything placed at a
+negative y in the river is buried and invisible — that is what happened when the blocky ground
+was replaced with a plane, and it hid the whole river for several versions.
+
 **Camera colliders use canopy width, not trunk width.** A sakura canopy is 3-4 blocks across
 while the trunk is one, so trunk-sized colliders let trees hide her completely — it happened
 at the pagoda. Trees push `r: 2.1-3.4`, and the pagoda keeps a 22-block tree exclusion.

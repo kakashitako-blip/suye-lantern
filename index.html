@@ -841,8 +841,8 @@ var houseCandles = [], pagLamps = [], treeLanterns = [], archLanterns = [], gint
   }
   for(i=0;i<34;i++){
     var lx = RIV.x0 + Math.random()*(RIV.x1-RIV.x0), lz = RIV.z0 + Math.random()*(RIV.z1-RIV.z0);
-    box(PLANT, lx, -0.12, lz, 0.9, vary(C.leaf, 18), 0.06);
-    if(Math.random() < .3) box(PLANT, lx, 0.02, lz, 0.4, vary(C.sakuraL, 14), 0.14);
+    box(PLANT, lx, 0.34, lz, 0.9, vary(C.leaf, 18), 0.06);
+    if(Math.random() < .3) box(PLANT, lx, 0.44, lz, 0.4, vary(C.sakuraL, 14), 0.14);
   }
 })();
 
@@ -895,17 +895,81 @@ var WATER = (function(){
   var nrm = new THREE.CanvasTexture(c);
   nrm.wrapS = nrm.wrapT = THREE.RepeatWrapping; nrm.repeat.set(5, 20);
   var mat = new THREE.MeshStandardMaterial({
-    color: 0x1b4f7d, roughness: 0.06, metalness: 0.92,
-    normalMap: nrm, normalScale: new THREE.Vector2(0.45, 0.45),
-    transparent: true, opacity: 0.86
+    color: 0x2f88a2, roughness: 0.16, metalness: 0.35,
+    normalMap: nrm, normalScale: new THREE.Vector2(0.9, 0.9),
+    transparent: true, opacity: 0.58, envMapIntensity: 0.9
   });
   var m = new THREE.Mesh(new THREE.PlaneGeometry(RIV.x1-RIV.x0+1, RIV.z1-RIV.z0+1), mat);
   m.rotation.x = -Math.PI/2;
-  m.position.set((RIV.x0+RIV.x1)/2, -0.22, (RIV.z0+RIV.z1)/2);
+  m.position.set((RIV.x0+RIV.x1)/2, 0.30, (RIV.z0+RIV.z1)/2);
   m.receiveShadow = true;
   scene.add(m);
-  return { mesh:m, nrm:nrm };
+  return { mesh:m, nrm:nrm, y: 0.30 };
 })();
+
+/* ---- fish under the surface, leaves drifting on it ---- */
+var FISH = (function(){
+  var n = MOBILE ? 5 : 8, out = [];
+  var COLS = [0xff8a4a, 0xf0cf72, 0xdd5f3a, 0xffb27a];
+  for(var i=0;i<n;i++){
+    var g = new THREE.Group();
+    var col = COLS[i % COLS.length];
+    g.add(px(.19,.15,.4, col));
+    var fin = px(.05,.17,.17, col); fin.position.z = -0.3;
+    var tail = new THREE.Group(); tail.position.z = -0.12; tail.add(fin);
+    g.add(tail);
+    g.position.set(
+      RIV.x0 + 1.6 + Math.random()*(RIV.x1 - RIV.x0 - 3.2),
+      0.1 + Math.random()*0.1,
+      RIV.z0 + 4 + Math.random()*(RIV.z1 - RIV.z0 - 8)
+    );
+    scene.add(g);
+    out.push({ g:g, tail:tail, sp: 0.5 + Math.random()*0.9,
+               p: Math.random()*9, dir: Math.random() < 0.5 ? 1 : -1 });
+  }
+  return out;
+})();
+
+var LEAVES = (function(){
+  var n = MOBILE ? 12 : 20, out = [];
+  for(var i=0;i<n;i++){
+    var m = px(.40,.05,.3, Math.random() < 0.55 ? 0x3f7a2d : 0xe09bc2);
+    m.position.set(
+      RIV.x0 + 1 + Math.random()*(RIV.x1 - RIV.x0 - 2),
+      0.30 + 0.03,
+      RIV.z0 + Math.random()*(RIV.z1 - RIV.z0)
+    );
+    m.rotation.y = Math.random()*3;
+    scene.add(m);
+    out.push({ m:m, sp: 0.22 + Math.random()*0.3, p: Math.random()*9 });
+  }
+  return out;
+})();
+
+function updateRiver(dt, t){
+  var i, f;
+  for(i=0;i<FISH.length;i++){
+    f = FISH[i];
+    f.g.position.z += f.dir * f.sp * dt;
+    f.g.position.x += Math.sin(t*0.6 + f.p) * dt * 0.35;
+    f.g.position.y = 0.1 + Math.sin(t*0.9 + f.p)*0.035;
+    if(f.g.position.z > RIV.z1 - 2){ f.dir = -1; }
+    if(f.g.position.z < RIV.z0 + 2){ f.dir =  1; }
+    f.g.position.x = Math.max(RIV.x0 + 1, Math.min(RIV.x1 - 1, f.g.position.x));
+    f.g.rotation.y = f.dir > 0 ? 0 : Math.PI;
+    f.tail.rotation.y = Math.sin(t*9 + f.p) * 0.6;
+  }
+  for(i=0;i<LEAVES.length;i++){
+    var L = LEAVES[i];
+    L.m.position.z += L.sp * dt;
+    L.m.position.x += Math.sin(t*0.5 + L.p) * dt * 0.25;
+    L.m.rotation.y += dt * 0.25;
+    if(L.m.position.z > RIV.z1){
+      L.m.position.z = RIV.z0;
+      L.m.position.x = RIV.x0 + 1 + Math.random()*(RIV.x1 - RIV.x0 - 2);
+    }
+  }
+}
 
 /* ---- falling blossom ---- */
 var PETALS = (function(){
@@ -1208,7 +1272,7 @@ function spawnDrifters(){
     var d = new THREE.Group();
     d.add(px(.7,.1,.7, 0x3f7a2d));
     var f = makeFlame(1.0); f.position.y = .22; d.add(f);
-    d.position.set(RIV.x0 + 1.5 + Math.random()*(RIV.x1-RIV.x0-3), -0.1, -46 - i*5);
+    d.position.set(RIV.x0 + 1.5 + Math.random()*(RIV.x1-RIV.x0-3), 0.34, -46 - i*5);
     scene.add(d); drifters.push(d);
   }
 }
@@ -1277,14 +1341,14 @@ function boatLaunch(){
       boat = new THREE.Group();
       boat.add(px(.7,.12,.7, 0x3f7a2d));
       var f = makeFlame(1.0); f.position.y = .2; boat.add(f);
-      boat.position.set(sx + 0.55, 0.85, player.position.z);
+      boat.position.set(sx + 0.55, 0.95, player.position.z);
       scene.add(boat);
     }),
     sWait(0.55),
     { dur: 1.2, update: function(p){
         var e = ease(p);
         boat.position.x = (sx + 0.55) + (RIV.x0 + 2.1 - sx - 0.55)*e;
-        boat.position.y = 0.85 - 0.97*e;
+        boat.position.y = 0.95 - 0.61*e;
       } },
     sDo(function(){ drifters.push(boat); }),
     sArm(0, 0.4),
@@ -1835,6 +1899,7 @@ function tick(){
 
   /* ---- blossom + water ---- */
   PETALS.update(dt, t);
+  updateRiver(dt, t);
   WATER.nrm.offset.y -= dt * 0.035;
   WATER.nrm.offset.x = Math.sin(t*0.12) * 0.05;
 
