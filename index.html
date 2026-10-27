@@ -59,6 +59,17 @@ canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 }
 .btn:active{transform:scale(.96)}
 .btn.ghost{background:none;color:var(--blush);border:1px solid var(--line);box-shadow:none}
+#againBtn{
+  position:fixed;z-index:6;right:16px;
+  top:calc(74px + env(safe-area-inset-top,0px));
+  -webkit-appearance:none;appearance:none;cursor:pointer;
+  padding:9px 15px;border-radius:999px;
+  background:rgba(26,7,21,.74);border:1px solid rgba(255,217,233,.22);
+  color:var(--blush);font-family:var(--f-body);font-weight:700;
+  font-size:.82rem;line-height:1.7;white-space:nowrap;
+  box-shadow:0 10px 26px -14px rgba(0,0,0,.95);
+}
+#againBtn:active{transform:scale(.95)}
 
 /* ---------- HUD ---------- */
 #hud{
@@ -2262,6 +2273,7 @@ function tick(){
   }
 
   /* ---- proximity ---- */
+  if(againBtn) againBtn.hidden = !(state.pool && pickEl.hidden);
   if(!paused && !CUT){
     var near = nextStation();
     var done = countFound();
@@ -2563,7 +2575,10 @@ function revealResult(pool, idx){
   }
   pkGrid.hidden = true;
   pkResult.hidden = false;
-  if(!pkResult.querySelector(".btn.ghost")) pkResult.appendChild(backBtn);
+  /* test for this button, not for any ghost button: the save-photo button is
+     also a ghost, and matching on the class alone meant the way back into
+     the village stopped being added at all */
+  if(backBtn.parentNode !== pkResult) pkResult.appendChild(backBtn);
   pickEl.hidden = false;
   pickEl.classList.remove("fading");
 }
@@ -2595,8 +2610,29 @@ backBtn.textContent = "\u101B\u103D\u102C\u1011\u1032 \u1015\u103C\u1014\u103A\u
 backBtn.addEventListener("click", function(){
   camFocus = null;
   pickEl.classList.add("fading");
-  setTimeout(function(){ pickEl.hidden = true; paused = false; }, REDUCED ? 0 : 560);
+  setTimeout(function(){
+    pickEl.hidden = true;
+    paused = false;
+    /* she has the run of a lit village now, so say how to get the sheet back */
+    hintEl.textContent = "\u101C\u1019\u103A\u1038\u101C\u103B\u103E\u1031\u102C\u1000\u103A\u1000\u103C\u100A\u103A\u1037\u1015\u102B \u00b7 \u1019\u102F\u1014\u103A\u1037\u1016\u102D\u102F\u1038\u1000\u102D\u102F \u1015\u103C\u1014\u103A\u1000\u103C\u100A\u103A\u1037\u1016\u102D\u102F\u1037 \u1021\u1031\u102C\u1000\u103A\u1000 \u1001\u101C\u102F\u1010\u103A";
+    hintEl.classList.add("show");
+    setTimeout(function(){ hintEl.classList.remove("show"); }, 6000);
+  }, REDUCED ? 0 : 560);
 });
+
+/* and a way back to it without reloading */
+var againBtn = document.createElement("button");
+againBtn.type = "button";
+againBtn.id = "againBtn";
+againBtn.textContent = "\u1019\u102F\u1014\u103A\u1037\u1016\u102D\u102F\u1038";
+againBtn.hidden = true;
+againBtn.addEventListener("click", function(){
+  if(!state.pool) return;
+  paused = true;
+  camFocus = FINALE_CAM;
+  revealResult(state.pool, state.pick);
+});
+document.body.appendChild(againBtn);
 
 $("saveSnap").addEventListener("click", function(){
   if(!SNAP) return;
